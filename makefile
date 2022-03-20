@@ -6,4 +6,5 @@ build:
 test:
 	gofmt -l -w .
 	go test ./... -v -cover
+	test/run.sh
 
