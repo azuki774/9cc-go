@@ -36,6 +36,16 @@ func Test_contains(t *testing.T) {
 			want: true,
 		},
 		{
+			name: "multiple",
+			args: args{b: byte('*'), bs: []byte{1, 2, 42}},
+			want: true,
+		},
+		{
+			name: "div",
+			args: args{b: byte('/'), bs: []byte{1, 2, 47}},
+			want: true,
+		},
+		{
 			name: "space",
 			args: args{b: byte(' '), bs: []byte{1, 2, 32}},
 			want: true,

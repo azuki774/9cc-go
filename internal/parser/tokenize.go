@@ -13,7 +13,7 @@ var (
 )
 
 var (
-	TK_SYMBOL_LIST = []byte{43, 45}                                 // + , -
+	TK_SYMBOL_LIST = []byte{43, 45, 42, 47}                         // + , -, *, /
 	TK_SPACE       = []byte{32}                                     // スペース
 	TK_DIGIT       = []byte{47, 48, 49, 50, 51, 52, 53, 54, 55, 56} // 0 - 9
 )
