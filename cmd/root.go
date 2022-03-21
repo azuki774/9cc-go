@@ -33,12 +33,18 @@ to quickly create a Cobra application.`,
 		}
 
 		OutputFileName, _ = cmd.Flags().GetString("output")
-		fmt.Printf("Output file name : %s\n", OutputFileName)
+		// fmt.Printf("Output file name : %s\n", OutputFileName)
 		SourceFileName = args[0]
-		fmt.Printf("Source file name : %s\n", SourceFileName)
+		// fmt.Printf("Source file name : %s\n", SourceFileName)
 
-		compiler.ConstCompile(OutputFileName, SourceFileName)
-		return nil
+		tf, _ := cmd.Flags().GetBool("tokenize")
+		if tf {
+			err = compiler.TokenizeOnly(OutputFileName, SourceFileName)
+			return err
+		}
+
+		err = compiler.CompileMain(OutputFileName, SourceFileName)
+		return err
 	},
 }
 
@@ -54,4 +60,5 @@ func Execute() {
 func init() {
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 	rootCmd.Flags().StringP("output", "o", "output.s", "output file name")
+	rootCmd.Flags().BoolP("tokenize", "", false, "only tokenize")
 }
