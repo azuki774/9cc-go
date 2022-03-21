@@ -1,4 +1,4 @@
-package compiler
+package parser
 
 type stringStream struct {
 	str   string

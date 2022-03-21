@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+
+	"github.com/azuki774/9cc-go/internal/parser"
 )
 
 var (
@@ -57,7 +59,7 @@ func TokenizeOnly(SourceFileName string) (err error) {
 	}
 
 	fmt.Println("Tokenize Only")
-	tokens, err := TokenizeMain(string(b))
+	tokens, err := parser.TokenizeMain(string(b))
 	if err != nil {
 		return fmt.Errorf("TokenizeOnly : %w", err)
 	}
