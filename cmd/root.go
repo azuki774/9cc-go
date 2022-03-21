@@ -8,7 +8,13 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/azuki774/9cc-go/internal/compiler"
 	"github.com/spf13/cobra"
+)
+
+var (
+	OutputFileName string
+	SourceFileName string
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -26,11 +32,12 @@ to quickly create a Cobra application.`,
 			return fmt.Errorf("invalid argument")
 		}
 
-		outputFileName, _ := cmd.Flags().GetString("output")
-		fmt.Printf("Output file name : %s\n", outputFileName)
-		sourceFileName := args[0]
-		fmt.Printf("Source file name : %s\n", sourceFileName)
+		OutputFileName, _ = cmd.Flags().GetString("output")
+		fmt.Printf("Output file name : %s\n", OutputFileName)
+		SourceFileName = args[0]
+		fmt.Printf("Source file name : %s\n", SourceFileName)
 
+		compiler.ConstCompile(OutputFileName, SourceFileName)
 		return nil
 	},
 }
