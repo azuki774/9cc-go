@@ -1,8 +1,9 @@
 #!/bin/bash
 BINARY_PATH=`dirname ${0}`/../build/9cc-go
-${BINARY_PATH} -o tmp.s ${INPUT}
 INPUT=${1}
 ANSWER=${2}
+
+${BINARY_PATH} -o ./test/tmp.s ${INPUT}
 
 cc -o ./test/tmp ./test/tmp.s
 rm -rf ./test/tmp.s
