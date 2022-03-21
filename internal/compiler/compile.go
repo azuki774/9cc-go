@@ -2,6 +2,7 @@ package compiler
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 )
 
@@ -47,24 +48,23 @@ func CompileMain(OutputFileName string, SourceFileName string) (err error) {
 	return nil
 }
 
-func TokenizeOnly(OutputFileName string, SourceFileName string) (err error) {
-	SourceFile, err = os.Open(SourceFileName)
+// Tokenizeのみ実行する、アウトプットは標準出力
+func TokenizeOnly(SourceFileName string) (err error) {
+	b, err := ioutil.ReadFile(SourceFileName)
 	defer SourceFile.Close()
 	if err != nil {
-		return fmt.Errorf("SourceFile can't open")
-	}
-	OutputFile, err = os.Create(OutputFileName)
-	defer OutputFile.Close()
-	if err != nil {
-		return fmt.Errorf("OutputFile can't open")
-	}
-
-	err = prefixWriter(OutputFile)
-	if err != nil {
-		return err
+		return fmt.Errorf("TokenizeOnly: SourceFile can't open")
 	}
 
 	fmt.Println("Tokenize Only")
+	tokens, err := TokenizeMain(string(b))
+	if err != nil {
+		return fmt.Errorf("TokenizeOnly : %w", err)
+	}
+
+	for _, token := range tokens {
+		token.Show()
+	}
 
 	return nil
 }

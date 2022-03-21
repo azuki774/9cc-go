@@ -39,7 +39,7 @@ to quickly create a Cobra application.`,
 
 		tf, _ := cmd.Flags().GetBool("tokenize")
 		if tf {
-			err = compiler.TokenizeOnly(OutputFileName, SourceFileName)
+			err = compiler.TokenizeOnly(SourceFileName)
 			return err
 		}
 
