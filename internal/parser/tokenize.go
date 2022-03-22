@@ -18,6 +18,13 @@ var (
 	TK_DIGIT       = []byte{47, 48, 49, 50, 51, 52, 53, 54, 55, 56} // 0 - 9
 )
 
+var (
+	BYTE_SYMBOL_ADD = byte(43)
+	BYTE_SYMBOL_SUB = byte(45)
+	BYTE_SYMBOL_MUL = byte(42)
+	BYTE_SYMBOL_DIV = byte(47)
+)
+
 type Token struct {
 	kind  int
 	value interface{}
@@ -60,10 +67,7 @@ func getNextToken(ss *stringStream) (token Token, err error) {
 		}
 
 		// 次の文字が見て読むべきかどうか判定
-		nChar, err := ss.nextPeekChar()
-		if err != nil {
-			return Token{}, err
-		}
+		nChar := ss.nextPeekChar()
 
 		tokenCategory := getTokenCategory(nChar)
 
@@ -128,7 +132,7 @@ func isContinueLoadNextChar(ct int, token Token) bool {
 }
 
 func TokenizeMain(str string) (tokens []Token, err error) {
-	ss := newStream(str)
+	ss := newStringStream(str)
 	for {
 		newToken, err := getNextToken(ss)
 		if err != nil {

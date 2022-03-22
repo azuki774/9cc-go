@@ -13,38 +13,29 @@ var (
 	OutputFile *os.File
 )
 
-// Temporary
-func ConstCompile(OutputFileName string, SourceFileName string) {
-	ofile, err := os.Create(OutputFileName)
-	if err != nil {
-		panic(err)
-	}
-	defer ofile.Close()
-
-	prefixWriter(ofile)
-	_, err = ofile.WriteString("main:\n")
-	_, err = ofile.WriteString("  mov rax, 42\n")
-	_, err = ofile.WriteString("  ret\n")
-	if err != nil {
-		panic(err)
-	}
-}
-
 func CompileMain(OutputFileName string, SourceFileName string) (err error) {
-	SourceFile, err = os.Create(SourceFileName)
+	b, err := ioutil.ReadFile(SourceFileName)
 	defer SourceFile.Close()
 	if err != nil {
-		return fmt.Errorf("SourceFile can't open")
+		return fmt.Errorf("CompileMain: SourceFile can't open")
 	}
 	OutputFile, err = os.Create(OutputFileName)
 	defer OutputFile.Close()
 	if err != nil {
-		return fmt.Errorf("OutputFile can't open")
+		return fmt.Errorf("CompileMain: OutputFile can't open")
 	}
 
-	err = prefixWriter(OutputFile)
+	tokens, err := parser.TokenizeMain(string(b))
 	if err != nil {
-		return err
+		return fmt.Errorf("CompileMain : Tokenize error : %w", err)
+	}
+
+	topNode := parser.ParserMain(tokens)
+	codes, _ := parser.GenAssembleMain(topNode)
+
+	err = stringsWriter(OutputFile, codes)
+	if err != nil {
+		return fmt.Errorf("CompileMain : stringsWriter error : %w", err)
 	}
 
 	return nil

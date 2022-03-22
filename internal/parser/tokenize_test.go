@@ -61,9 +61,9 @@ func Test_contains(t *testing.T) {
 }
 
 func Test_getNextToken(t *testing.T) {
-	ss1 := newStream("     123")
-	ss2 := newStream("+")
-	ss3 := newStream("  - ")
+	ss1 := newStringStream("     123")
+	ss2 := newStringStream("+")
+	ss3 := newStringStream("  - ")
 
 	type args struct {
 		ss *stringStream
