@@ -13,7 +13,7 @@ var (
 )
 
 var (
-	TK_SYMBOL_LIST = []byte{43, 45, 42, 47}                         // + , -, *, /
+	TK_SYMBOL_LIST = []byte{43, 45, 42, 47, 40, 41}                 // + , -, *, /, (, )
 	TK_SPACE       = []byte{32}                                     // スペース
 	TK_DIGIT       = []byte{47, 48, 49, 50, 51, 52, 53, 54, 55, 56} // 0 - 9
 )
@@ -23,6 +23,8 @@ var (
 	BYTE_SYMBOL_SUB = byte(45)
 	BYTE_SYMBOL_MUL = byte(42)
 	BYTE_SYMBOL_DIV = byte(47)
+	BYTE_LEFT_PAT   = byte(40)
+	BYTE_RIGHT_PAT  = byte(41)
 )
 
 type Token struct {

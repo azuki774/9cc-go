@@ -80,6 +80,17 @@ func Expr_mul() (node *abstSyntaxNode) {
 
 func Expr_primary() (node *abstSyntaxNode) {
 	// primary = num | "(" expr ")"
+	nToken := ts.nextPeekToken()
+	if nToken.kind == TK_SYMBOL {
+		b := nToken.value.(byte)
+		if b == BYTE_LEFT_PAT {
+			ts.nextToken() // (
+			node = Expr_expr()
+			ts.nextToken() // )
+			return node
+		}
+
+	}
 	node = makeNewAbstSyntaxNode(ND_NUM, nil, nil, ts.nextToken().value) // Token は 1つ進む
 	// Tokenは1つ進む
 	return node
