@@ -1,4 +1,4 @@
-package compiler
+package parser
 
 import (
 	"fmt"
@@ -13,9 +13,18 @@ var (
 )
 
 var (
-	TK_SYMBOL_LIST = []byte{43, 45}                                 // + , -
+	TK_SYMBOL_LIST = []byte{43, 45, 42, 47, 40, 41}                 // + , -, *, /, (, )
 	TK_SPACE       = []byte{32}                                     // スペース
 	TK_DIGIT       = []byte{47, 48, 49, 50, 51, 52, 53, 54, 55, 56} // 0 - 9
+)
+
+var (
+	BYTE_SYMBOL_ADD = byte(43)
+	BYTE_SYMBOL_SUB = byte(45)
+	BYTE_SYMBOL_MUL = byte(42)
+	BYTE_SYMBOL_DIV = byte(47)
+	BYTE_LEFT_PAT   = byte(40)
+	BYTE_RIGHT_PAT  = byte(41)
 )
 
 type Token struct {
@@ -60,10 +69,7 @@ func getNextToken(ss *stringStream) (token Token, err error) {
 		}
 
 		// 次の文字が見て読むべきかどうか判定
-		nChar, err := ss.nextPeekChar()
-		if err != nil {
-			return Token{}, err
-		}
+		nChar := ss.nextPeekChar()
 
 		tokenCategory := getTokenCategory(nChar)
 
@@ -128,7 +134,7 @@ func isContinueLoadNextChar(ct int, token Token) bool {
 }
 
 func TokenizeMain(str string) (tokens []Token, err error) {
-	ss := newStream(str)
+	ss := newStringStream(str)
 	for {
 		newToken, err := getNextToken(ss)
 		if err != nil {

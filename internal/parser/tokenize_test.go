@@ -1,4 +1,4 @@
-package compiler
+package parser
 
 import (
 	"reflect"
@@ -36,6 +36,16 @@ func Test_contains(t *testing.T) {
 			want: true,
 		},
 		{
+			name: "multiple",
+			args: args{b: byte('*'), bs: []byte{1, 2, 42}},
+			want: true,
+		},
+		{
+			name: "div",
+			args: args{b: byte('/'), bs: []byte{1, 2, 47}},
+			want: true,
+		},
+		{
 			name: "space",
 			args: args{b: byte(' '), bs: []byte{1, 2, 32}},
 			want: true,
@@ -51,9 +61,9 @@ func Test_contains(t *testing.T) {
 }
 
 func Test_getNextToken(t *testing.T) {
-	ss1 := newStream("     123")
-	ss2 := newStream("+")
-	ss3 := newStream("  - ")
+	ss1 := newStringStream("     123")
+	ss2 := newStringStream("+")
+	ss3 := newStringStream("  - ")
 
 	type args struct {
 		ss *stringStream
