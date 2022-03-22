@@ -13,9 +13,9 @@ var (
 )
 
 var (
-	TK_SYMBOL_LIST = []byte{43, 45, 42, 47, 40, 41}                 // + , -, *, /, (, )
-	TK_SPACE       = []byte{32}                                     // スペース
-	TK_DIGIT       = []byte{47, 48, 49, 50, 51, 52, 53, 54, 55, 56} // 0 - 9
+	TK_SYMBOL_LIST = []byte{BYTE_SYMBOL_ADD, BYTE_SYMBOL_SUB, BYTE_SYMBOL_MUL, BYTE_SYMBOL_DIV, BYTE_LEFT_PAT, BYTE_RIGHT_PAT} // + , -, *, /, (, )
+	TK_SPACE       = []byte{BYTE_SPACE}                                                                                        // スペース
+	TK_DIGIT       = []byte{47, 48, 49, 50, 51, 52, 53, 54, 55, 56}                                                            // 0 - 9
 )
 
 var (
@@ -25,6 +25,7 @@ var (
 	BYTE_SYMBOL_DIV = byte(47)
 	BYTE_LEFT_PAT   = byte(40)
 	BYTE_RIGHT_PAT  = byte(41)
+	BYTE_SPACE      = byte(32)
 )
 
 type Token struct {
