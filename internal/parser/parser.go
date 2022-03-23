@@ -11,6 +11,10 @@ var (
 	ND_SUB       = 12
 	ND_MUL       = 13
 	ND_DIV       = 14
+	ND_COMP      = 21 // ==
+	ND_NOTEQ     = 22 // !=
+	ND_LT        = 23 // <
+	ND_LTQ       = 24 // <=
 )
 
 type abstSyntaxNode struct {
@@ -25,11 +29,75 @@ func makeNewAbstSyntaxNode(nodeKind int, leftNode *abstSyntaxNode, rightNode *ab
 }
 
 func Expr_expr() (node *abstSyntaxNode) {
-	// expr    = mul ("+" mul | "-" mul )*
+	// expr = equality
 	if !ts.ok() {
 		return nil
 	}
+	node = Expr_equality()
 
+	return node
+}
+
+func Expr_equality() (node *abstSyntaxNode) {
+	// equality = relational ("==" relational | "!=" relational)*
+	node = Expr_relational()
+	// == か != があるとき
+	for {
+		nToken := ts.nextPeekToken()
+		switch nToken.kind {
+		case TK_COMP:
+			ts.nextToken()
+			node = makeNewAbstSyntaxNode(ND_COMP, node, Expr_relational(), nil)
+			continue
+		case TK_NOTEQ:
+			ts.nextToken()
+			node = makeNewAbstSyntaxNode(ND_NOTEQ, node, Expr_relational(), nil)
+			continue
+		}
+
+		// == Token でも != でもないとき
+		break
+	}
+
+	return node
+}
+
+func Expr_relational() (node *abstSyntaxNode) {
+	// relational = add ("<" add | "<=" add | ">" add | ">=" add)*
+	node = Expr_add()
+	// <, > か <=, >= があるとき
+	for {
+		nToken := ts.nextPeekToken()
+		switch nToken.kind {
+		case TK_LT:
+			ts.nextToken()
+			node = makeNewAbstSyntaxNode(ND_LT, node, Expr_add(), nil)
+			continue
+		case TK_LTQ:
+			ts.nextToken()
+			node = makeNewAbstSyntaxNode(ND_LTQ, node, Expr_add(), nil)
+			continue
+		case TK_GT:
+			// TK_LT の左右入れ替え
+			ts.nextToken()
+			node = makeNewAbstSyntaxNode(ND_LT, Expr_add(), node, nil)
+			continue
+		case TK_GTQ:
+			// TK_LTQ の左右入れ替え
+			ts.nextToken()
+			node = makeNewAbstSyntaxNode(ND_LTQ, Expr_add(), node, nil)
+			continue
+		}
+
+		// == Token でも != でもないとき
+		break
+	}
+
+	return node
+}
+
+func Expr_add() (node *abstSyntaxNode) {
+	// add = mul ("+" mul | "-" mul )*
 	node = Expr_mul()
 	// + か - があるとき
 	for {
@@ -48,7 +116,6 @@ func Expr_expr() (node *abstSyntaxNode) {
 		// + Token でも - Token でもないとき
 		break
 	}
-
 	return node
 }
 
