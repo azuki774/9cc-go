@@ -6,11 +6,11 @@ var (
 
 var (
 	ND_UNDEFINED = 0
-	ND_ADD       = 1
-	ND_SUB       = 2
-	ND_MUL       = 3
-	ND_DIV       = 4
-	ND_NUM       = 10
+	ND_NUM       = 1
+	ND_ADD       = 11
+	ND_SUB       = 12
+	ND_MUL       = 13
+	ND_DIV       = 14
 )
 
 type abstSyntaxNode struct {
@@ -34,18 +34,15 @@ func Expr_expr() (node *abstSyntaxNode) {
 	// + か - があるとき
 	for {
 		nToken := ts.nextPeekToken()
-		if nToken.kind == TK_SYMBOL {
-			b := nToken.value.(byte)
-			switch b {
-			case BYTE_SYMBOL_ADD:
-				ts.nextToken()
-				node = makeNewAbstSyntaxNode(ND_ADD, node, Expr_mul(), nil)
-				continue
-			case BYTE_SYMBOL_SUB:
-				ts.nextToken()
-				node = makeNewAbstSyntaxNode(ND_SUB, node, Expr_mul(), nil)
-				continue
-			}
+		switch nToken.kind {
+		case TK_SYMBOL_ADD:
+			ts.nextToken()
+			node = makeNewAbstSyntaxNode(ND_ADD, node, Expr_mul(), nil)
+			continue
+		case TK_SYMBOL_SUB:
+			ts.nextToken()
+			node = makeNewAbstSyntaxNode(ND_SUB, node, Expr_mul(), nil)
+			continue
 		}
 
 		// + Token でも - Token でもないとき
@@ -61,18 +58,15 @@ func Expr_mul() (node *abstSyntaxNode) {
 	// * か / があるとき
 	for {
 		nToken := ts.nextPeekToken()
-		if nToken.kind == TK_SYMBOL {
-			b := nToken.value.(byte)
-			switch b {
-			case BYTE_SYMBOL_MUL:
-				ts.nextToken()
-				node = makeNewAbstSyntaxNode(ND_MUL, node, Expr_unary(), nil)
-				continue
-			case BYTE_SYMBOL_DIV:
-				ts.nextToken()
-				node = makeNewAbstSyntaxNode(ND_DIV, node, Expr_unary(), nil)
-				continue
-			}
+		switch nToken.kind {
+		case TK_SYMBOL_MUL:
+			ts.nextToken()
+			node = makeNewAbstSyntaxNode(ND_MUL, node, Expr_mul(), nil)
+			continue
+		case TK_SYMBOL_DIV:
+			ts.nextToken()
+			node = makeNewAbstSyntaxNode(ND_DIV, node, Expr_mul(), nil)
+			continue
 		}
 
 		// * Token でも / Token でもないとき
@@ -86,19 +80,16 @@ func Expr_unary() (node *abstSyntaxNode) {
 	// unary   = ("+" | "-")? primary
 	// +x -> x, -x -> 0-x
 	nToken := ts.nextPeekToken()
-	if nToken.kind == TK_SYMBOL {
-		b := nToken.value.(byte)
-		switch b {
-		case BYTE_SYMBOL_ADD:
-			ts.nextToken() // + を読み飛ばす
-			node = Expr_primary()
-			return node
-		case BYTE_SYMBOL_SUB:
-			ts.nextToken()
-			leftNode := makeNewAbstSyntaxNode(ND_NUM, nil, nil, 0)
-			node = makeNewAbstSyntaxNode(ND_SUB, leftNode, Expr_primary(), nil) // "0 -" x に対応
-			return node
-		}
+	switch nToken.kind {
+	case TK_SYMBOL_ADD:
+		ts.nextToken() // + を読み飛ばす
+		node = Expr_primary()
+		return node
+	case TK_SYMBOL_SUB:
+		ts.nextToken()
+		leftNode := makeNewAbstSyntaxNode(ND_NUM, nil, nil, 0)
+		node = makeNewAbstSyntaxNode(ND_SUB, leftNode, Expr_primary(), nil) // "0 -" x に対応
+		return node
 	}
 
 	// + も - もないとき
@@ -109,15 +100,11 @@ func Expr_unary() (node *abstSyntaxNode) {
 func Expr_primary() (node *abstSyntaxNode) {
 	// primary = num | "(" expr ")"
 	nToken := ts.nextPeekToken()
-	if nToken.kind == TK_SYMBOL {
-		b := nToken.value.(byte)
-		if b == BYTE_LEFT_PAT {
-			ts.nextToken() // (
-			node = Expr_expr()
-			ts.nextToken() // )
-			return node
-		}
-
+	if nToken.kind == TK_SYMBOL_LEFTPAT {
+		ts.nextToken() // (
+		node = Expr_expr()
+		ts.nextToken() // )
+		return node
 	}
 	node = makeNewAbstSyntaxNode(ND_NUM, nil, nil, ts.nextToken().value) // Token は 1つ進む
 	// Tokenは1つ進む
