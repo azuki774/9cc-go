@@ -15,14 +15,20 @@ var (
 	TK_SYMBOL_DIV      = 14
 	TK_SYMBOL_LEFTPAT  = 15
 	TK_SYMBOL_RIGHTPAT = 16
+	TK_COMP            = 21 // ==
+	TK_NOTEQ           = 22 // !=
+	TK_LT              = 23 // <
+	TK_LTQ             = 24 // <=
+	TK_GT              = 25 // >
+	TK_GTQ             = 26 // >=
 	TK_EOF             = 255
 )
 
 var (
 	// parser用
-	TK_SYMBOL_LIST = []byte{BYTE_SYMBOL_ADD, BYTE_SYMBOL_SUB, BYTE_SYMBOL_MUL, BYTE_SYMBOL_DIV, BYTE_LEFTPAT, BYTE_RIGHTPAT} // + , -, *, /, (, )
-	TK_SPACE       = []byte{BYTE_SPACE}                                                                                      // スペース
-	TK_DIGIT       = []byte{47, 48, 49, 50, 51, 52, 53, 54, 55, 56}                                                          // 0 - 9
+	TK_SYMBOL_LIST = []byte{BYTE_SYMBOL_ADD, BYTE_SYMBOL_SUB, BYTE_SYMBOL_MUL, BYTE_SYMBOL_DIV, BYTE_LEFTPAT, BYTE_RIGHTPAT, BYTE_EQUAL, BYTE_EXC, BYTE_LT, BYTE_GT}
+	TK_SPACE       = []byte{BYTE_SPACE}                             // スペース
+	TK_DIGIT       = []byte{47, 48, 49, 50, 51, 52, 53, 54, 55, 56} // 0 - 9
 )
 
 var (
@@ -33,6 +39,10 @@ var (
 	BYTE_LEFTPAT    = byte(40)
 	BYTE_RIGHTPAT   = byte(41)
 	BYTE_SPACE      = byte(32)
+	BYTE_EQUAL      = byte(61)
+	BYTE_EXC        = byte(33)
+	BYTE_LT         = byte(60) // <
+	BYTE_GT         = byte(62) // >
 )
 
 type Token struct {
@@ -99,6 +109,39 @@ func getNextToken(ss *stringStream) (token Token, err error) {
 				token = Token{kind: TK_SYMBOL_LEFTPAT}
 			case BYTE_RIGHTPAT:
 				token = Token{kind: TK_SYMBOL_RIGHTPAT}
+			case BYTE_EQUAL:
+				nnChar := ss.nextPeekChar()
+				if nnChar == BYTE_EQUAL {
+					ss.nextChar() // =
+					token = Token{kind: TK_COMP}
+				} else {
+					// TODO: 代入
+				}
+			case BYTE_EXC:
+				// !=
+				nnChar := ss.nextPeekChar()
+				if nnChar == BYTE_EQUAL {
+					ss.nextChar() // =
+					token = Token{kind: TK_NOTEQ}
+				} else {
+					return Token{}, fmt.Errorf("getNextToken : != tokenize error")
+				}
+			case BYTE_LT:
+				nnChar := ss.nextPeekChar()
+				if nnChar == BYTE_EQUAL {
+					ss.nextChar()               // =
+					token = Token{kind: TK_LTQ} // <=
+				} else {
+					token = Token{kind: TK_LT} // <
+				}
+			case BYTE_GT:
+				nnChar := ss.nextPeekChar()
+				if nnChar == BYTE_EQUAL {
+					ss.nextChar()               // =
+					token = Token{kind: TK_GTQ} // >=
+				} else {
+					token = Token{kind: TK_GT} // >
+				}
 			}
 			break
 		}

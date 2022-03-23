@@ -68,6 +68,12 @@ func Test_getNextToken(t *testing.T) {
 	ss5 := newStringStream("/ ")
 	ss6 := newStringStream("()")
 	ss7 := newStringStream(")")
+	ss8 := newStringStream("== ")
+	ss9 := newStringStream("!=")
+	ss10 := newStringStream("< 3")
+	ss11 := newStringStream("<= 2")
+	ss12 := newStringStream(">1")
+	ss13 := newStringStream(">=10")
 	type args struct {
 		ss *stringStream
 	}
@@ -117,6 +123,42 @@ func Test_getNextToken(t *testing.T) {
 			name:      "right )",
 			args:      args{ss: ss7},
 			wantToken: Token{kind: TK_SYMBOL_RIGHTPAT},
+			wantErr:   false,
+		},
+		{
+			name:      "==",
+			args:      args{ss: ss8},
+			wantToken: Token{kind: TK_COMP},
+			wantErr:   false,
+		},
+		{
+			name:      "!=",
+			args:      args{ss: ss9},
+			wantToken: Token{kind: TK_NOTEQ},
+			wantErr:   false,
+		},
+		{
+			name:      "<",
+			args:      args{ss: ss10},
+			wantToken: Token{kind: TK_LT},
+			wantErr:   false,
+		},
+		{
+			name:      "<=",
+			args:      args{ss: ss11},
+			wantToken: Token{kind: TK_LTQ},
+			wantErr:   false,
+		},
+		{
+			name:      ">",
+			args:      args{ss: ss12},
+			wantToken: Token{kind: TK_GT},
+			wantErr:   false,
+		},
+		{
+			name:      ">=",
+			args:      args{ss: ss13},
+			wantToken: Token{kind: TK_GTQ},
 			wantErr:   false,
 		},
 	}
