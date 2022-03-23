@@ -26,6 +26,10 @@ func makeNewAbstSyntaxNode(nodeKind int, leftNode *abstSyntaxNode, rightNode *ab
 
 func Expr_expr() (node *abstSyntaxNode) {
 	// expr    = mul ("+" mul | "-" mul )*
+	if !ts.ok() {
+		return nil
+	}
+
 	node = Expr_mul()
 	// + か - があるとき
 	for {

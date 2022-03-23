@@ -64,7 +64,10 @@ func Test_getNextToken(t *testing.T) {
 	ss1 := newStringStream("     123")
 	ss2 := newStringStream("+")
 	ss3 := newStringStream("  - ")
-
+	ss4 := newStringStream("  * ")
+	ss5 := newStringStream("/ ")
+	ss6 := newStringStream("()")
+	ss7 := newStringStream(")")
 	type args struct {
 		ss *stringStream
 	}
@@ -83,13 +86,37 @@ func Test_getNextToken(t *testing.T) {
 		{
 			name:      "plus",
 			args:      args{ss: ss2},
-			wantToken: Token{kind: TK_SYMBOL, value: TK_SYMBOL_LIST[0]},
+			wantToken: Token{kind: TK_SYMBOL, value: BYTE_SYMBOL_ADD},
 			wantErr:   false,
 		},
 		{
 			name:      "minus",
 			args:      args{ss: ss3},
-			wantToken: Token{kind: TK_SYMBOL, value: TK_SYMBOL_LIST[1]},
+			wantToken: Token{kind: TK_SYMBOL, value: BYTE_SYMBOL_SUB},
+			wantErr:   false,
+		},
+		{
+			name:      "mul",
+			args:      args{ss: ss4},
+			wantToken: Token{kind: TK_SYMBOL, value: BYTE_SYMBOL_MUL},
+			wantErr:   false,
+		},
+		{
+			name:      "div",
+			args:      args{ss: ss5},
+			wantToken: Token{kind: TK_SYMBOL, value: BYTE_SYMBOL_DIV},
+			wantErr:   false,
+		},
+		{
+			name:      "left (",
+			args:      args{ss: ss6},
+			wantToken: Token{kind: TK_SYMBOL, value: BYTE_LEFT_PAT},
+			wantErr:   false,
+		},
+		{
+			name:      "right )",
+			args:      args{ss: ss7},
+			wantToken: Token{kind: TK_SYMBOL, value: BYTE_RIGHT_PAT},
 			wantErr:   false,
 		},
 	}
