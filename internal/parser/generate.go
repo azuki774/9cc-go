@@ -38,6 +38,22 @@ func genCode(node *abstSyntaxNode) {
 	case ND_DIV:
 		generatingCode = append(generatingCode, "cqo\n")
 		generatingCode = append(generatingCode, "idiv rdi\n")
+	case ND_COMP:
+		generatingCode = append(generatingCode, "cmp rax, rdi\n")
+		generatingCode = append(generatingCode, "sete al\n")
+		generatingCode = append(generatingCode, "movzb rax, al\n")
+	case ND_NOTEQ:
+		generatingCode = append(generatingCode, "cmp rax, rdi\n")
+		generatingCode = append(generatingCode, "setne al\n")
+		generatingCode = append(generatingCode, "movzb rax, al\n")
+	case ND_LT:
+		generatingCode = append(generatingCode, "cmp rax, rdi\n")
+		generatingCode = append(generatingCode, "setl al\n")
+		generatingCode = append(generatingCode, "movzb rax, al\n")
+	case ND_LTQ:
+		generatingCode = append(generatingCode, "cmp rax, rdi\n")
+		generatingCode = append(generatingCode, "setle al\n")
+		generatingCode = append(generatingCode, "movzb rax, al\n")
 	}
 
 	generatingCode = append(generatingCode, "push rax\n")

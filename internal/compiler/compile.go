@@ -13,7 +13,7 @@ var (
 	OutputFile *os.File
 )
 
-func CompileMain(OutputFileName string, SourceFileName string) (err error) {
+func CompileMain(OutputFileName string, SourceFileName string, showTokenize bool) (err error) {
 	b, err := ioutil.ReadFile(SourceFileName)
 	defer SourceFile.Close()
 	if err != nil {
@@ -30,6 +30,11 @@ func CompileMain(OutputFileName string, SourceFileName string) (err error) {
 		return fmt.Errorf("CompileMain : Tokenize error : %w", err)
 	}
 
+	if showTokenize {
+		for _, token := range tokens {
+			token.Show()
+		}
+	}
 	topNode := parser.ParserMain(tokens)
 	codes, _ := parser.GenAssembleMain(topNode)
 

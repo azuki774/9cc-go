@@ -13,4 +13,24 @@ ${NOWDIR}/verify.sh ${NOWDIR}/src/0-4.c 5 || exit 1
 ${NOWDIR}/verify.sh ${NOWDIR}/src/0-5.c 26 || exit 1
 ${NOWDIR}/verify.sh ${NOWDIR}/src/0-6.c 56 || exit 1
 ${NOWDIR}/verify.sh ${NOWDIR}/src/0-7.c 90 || exit 1
+${NOWDIR}/verify.sh ${NOWDIR}/src/0-8.c 6 || exit 1
+${NOWDIR}/verify.sh ${NOWDIR}/src/0-9.c 2 || exit 1
+${NOWDIR}/verify.sh ${NOWDIR}/src/1-0-0.c 1 || exit 1
+${NOWDIR}/verify.sh ${NOWDIR}/src/1-0-1.c 0 || exit 1
+${NOWDIR}/verify.sh ${NOWDIR}/src/1-0-2.c 1 || exit 1
+${NOWDIR}/verify.sh ${NOWDIR}/src/1-1-0.c 1 || exit 1
+${NOWDIR}/verify.sh ${NOWDIR}/src/1-1-1.c 0 || exit 1
+${NOWDIR}/verify.sh ${NOWDIR}/src/1-1-2.c 0 || exit 1
+${NOWDIR}/verify.sh ${NOWDIR}/src/1-2-0.c 1 || exit 1
+${NOWDIR}/verify.sh ${NOWDIR}/src/1-2-1.c 0 || exit 1
+${NOWDIR}/verify.sh ${NOWDIR}/src/1-2-2.c 1 || exit 1
+${NOWDIR}/verify.sh ${NOWDIR}/src/1-3-0.c 1 || exit 1
+${NOWDIR}/verify.sh ${NOWDIR}/src/1-3-1.c 1 || exit 1
+${NOWDIR}/verify.sh ${NOWDIR}/src/1-3-2.c 0 || exit 1
+${NOWDIR}/verify.sh ${NOWDIR}/src/1-4-0.c 1 || exit 1
+${NOWDIR}/verify.sh ${NOWDIR}/src/1-4-1.c 0 || exit 1
+${NOWDIR}/verify.sh ${NOWDIR}/src/1-4-2.c 1 || exit 1
+${NOWDIR}/verify.sh ${NOWDIR}/src/1-5-0.c 1 || exit 1
+${NOWDIR}/verify.sh ${NOWDIR}/src/1-5-1.c 1 || exit 1
+${NOWDIR}/verify.sh ${NOWDIR}/src/1-5-2.c 0 || exit 1
 echo "All test passed"

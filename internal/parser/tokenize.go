@@ -6,16 +6,29 @@ import (
 )
 
 var (
-	TK_UNDEFINED = 0
-	TK_SYMBOL    = 1
-	TK_NUM       = 2
-	TK_EOF       = 255
+	// Token.kind に入る
+	TK_UNDEFINED       = 0
+	TK_NUM             = 1
+	TK_SYMBOL_ADD      = 11
+	TK_SYMBOL_SUB      = 12
+	TK_SYMBOL_MUL      = 13
+	TK_SYMBOL_DIV      = 14
+	TK_SYMBOL_LEFTPAT  = 15
+	TK_SYMBOL_RIGHTPAT = 16
+	TK_COMP            = 21 // ==
+	TK_NOTEQ           = 22 // !=
+	TK_LT              = 23 // <
+	TK_LTQ             = 24 // <=
+	TK_GT              = 25 // >
+	TK_GTQ             = 26 // >=
+	TK_EOF             = 255
 )
 
 var (
-	TK_SYMBOL_LIST = []byte{BYTE_SYMBOL_ADD, BYTE_SYMBOL_SUB, BYTE_SYMBOL_MUL, BYTE_SYMBOL_DIV, BYTE_LEFT_PAT, BYTE_RIGHT_PAT} // + , -, *, /, (, )
-	TK_SPACE       = []byte{BYTE_SPACE}                                                                                        // スペース
-	TK_DIGIT       = []byte{47, 48, 49, 50, 51, 52, 53, 54, 55, 56}                                                            // 0 - 9
+	// parser用
+	TK_SYMBOL_LIST = []byte{BYTE_SYMBOL_ADD, BYTE_SYMBOL_SUB, BYTE_SYMBOL_MUL, BYTE_SYMBOL_DIV, BYTE_LEFTPAT, BYTE_RIGHTPAT, BYTE_EQUAL, BYTE_EXC, BYTE_LT, BYTE_GT}
+	TK_SPACE       = []byte{BYTE_SPACE}                             // スペース
+	TK_DIGIT       = []byte{47, 48, 49, 50, 51, 52, 53, 54, 55, 56} // 0 - 9
 )
 
 var (
@@ -23,9 +36,13 @@ var (
 	BYTE_SYMBOL_SUB = byte(45)
 	BYTE_SYMBOL_MUL = byte(42)
 	BYTE_SYMBOL_DIV = byte(47)
-	BYTE_LEFT_PAT   = byte(40)
-	BYTE_RIGHT_PAT  = byte(41)
+	BYTE_LEFTPAT    = byte(40)
+	BYTE_RIGHTPAT   = byte(41)
 	BYTE_SPACE      = byte(32)
+	BYTE_EQUAL      = byte(61)
+	BYTE_EXC        = byte(33)
+	BYTE_LT         = byte(60) // <
+	BYTE_GT         = byte(62) // >
 )
 
 type Token struct {
@@ -37,12 +54,12 @@ func (token *Token) Show() {
 	switch token.kind {
 	case TK_UNDEFINED:
 		fmt.Printf("TK_UNDEFINED\n")
-	case TK_SYMBOL:
-		fmt.Printf("TK_SYMBOL : %s\n", string(token.value.(byte)))
 	case TK_NUM:
 		fmt.Printf("TK_NUM : %d\n", token.value.(int))
 	case TK_EOF:
 		fmt.Printf("TK_EOF\n")
+	default:
+		fmt.Printf("TK_SYMBOL : %d\n", token.kind)
 	}
 
 }
@@ -71,21 +88,65 @@ func getNextToken(ss *stringStream) (token Token, err error) {
 
 		// 次の文字が見て読むべきかどうか判定
 		nChar := ss.nextPeekChar()
-
-		tokenCategory := getTokenCategory(nChar)
-
-		if !isContinueLoadNextChar(tokenCategory, token) {
+		if !isContinueLoadNextChar(nChar, token) {
 			break
 		}
 
 		ss.nextChar() // ポインタだけすすめる
 
-		if tokenCategory == TK_SYMBOL {
-			token = Token{kind: TK_SYMBOL, value: nChar}
+		// 処理対象がSymbolの場合
+		if contains(nChar, TK_SYMBOL_LIST) {
+			switch nChar {
+			case BYTE_SYMBOL_ADD:
+				token = Token{kind: TK_SYMBOL_ADD}
+			case BYTE_SYMBOL_SUB:
+				token = Token{kind: TK_SYMBOL_SUB}
+			case BYTE_SYMBOL_MUL:
+				token = Token{kind: TK_SYMBOL_MUL}
+			case BYTE_SYMBOL_DIV:
+				token = Token{kind: TK_SYMBOL_DIV}
+			case BYTE_LEFTPAT:
+				token = Token{kind: TK_SYMBOL_LEFTPAT}
+			case BYTE_RIGHTPAT:
+				token = Token{kind: TK_SYMBOL_RIGHTPAT}
+			case BYTE_EQUAL:
+				nnChar := ss.nextPeekChar()
+				if nnChar == BYTE_EQUAL {
+					ss.nextChar() // =
+					token = Token{kind: TK_COMP}
+				} else {
+					// TODO: 代入
+				}
+			case BYTE_EXC:
+				// !=
+				nnChar := ss.nextPeekChar()
+				if nnChar == BYTE_EQUAL {
+					ss.nextChar() // =
+					token = Token{kind: TK_NOTEQ}
+				} else {
+					return Token{}, fmt.Errorf("getNextToken : != tokenize error")
+				}
+			case BYTE_LT:
+				nnChar := ss.nextPeekChar()
+				if nnChar == BYTE_EQUAL {
+					ss.nextChar()               // =
+					token = Token{kind: TK_LTQ} // <=
+				} else {
+					token = Token{kind: TK_LT} // <
+				}
+			case BYTE_GT:
+				nnChar := ss.nextPeekChar()
+				if nnChar == BYTE_EQUAL {
+					ss.nextChar()               // =
+					token = Token{kind: TK_GTQ} // >=
+				} else {
+					token = Token{kind: TK_GT} // >
+				}
+			}
 			break
 		}
 
-		if tokenCategory == TK_NUM {
+		if contains(nChar, TK_DIGIT) {
 			if token.kind == TK_UNDEFINED || token.kind == TK_NUM {
 				token.kind = TK_NUM
 				numString += string(nChar)
@@ -107,30 +168,30 @@ func getNextToken(ss *stringStream) (token Token, err error) {
 	return token, nil
 }
 
-// このbyteがどの種類に属するかを判定して、TK_*** を返す
-func getTokenCategory(b byte) (category int) {
-	if contains(b, TK_SPACE) {
-		return TK_UNDEFINED
-	}
-	if contains(b, TK_SYMBOL_LIST) {
-		return TK_SYMBOL
-	}
-	if contains(b, TK_DIGIT) {
-		return TK_NUM
-	}
-
-	return TK_UNDEFINED
-}
-
 // 今読もうとしている文字のct = TK_***が、今読もうとしているTokenの続きならtrue、そうでないならfalse
-func isContinueLoadNextChar(ct int, token Token) bool {
+func isContinueLoadNextChar(b byte, token Token) bool {
 	if token.kind == TK_UNDEFINED {
 		return true
 	}
 
-	if ct != token.kind {
+	if b == BYTE_SPACE {
+		if token.kind == TK_UNDEFINED {
+			return true
+		}
+		// 既になんらかの文字を読み込んでいたらTokenの切れ目
 		return false
 	}
+
+	if token.kind == TK_NUM && contains(b, TK_SYMBOL_LIST) {
+		// ex. 1+
+		return false
+	}
+
+	if token.kind != TK_NUM && !contains(b, TK_DIGIT) {
+		// ex. +1
+		return false
+	}
+
 	return true
 }
 
