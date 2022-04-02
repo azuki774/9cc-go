@@ -76,6 +76,7 @@ func Test_getNextToken(t *testing.T) {
 	ss13 := newStringStream(">=10")
 	ss14 := newStringStream("=10")
 	ss15 := newStringStream(";")
+	ss16 := newStringStream("a=123")
 	type args struct {
 		ss *stringStream
 	}
@@ -173,6 +174,12 @@ func Test_getNextToken(t *testing.T) {
 			name:      ";",
 			args:      args{ss: ss15},
 			wantToken: Token{kind: TK_SEMICOLON},
+			wantErr:   false,
+		},
+		{
+			name:      "a",
+			args:      args{ss: ss16},
+			wantToken: Token{kind: TK_IDENT, value: "a"},
 			wantErr:   false,
 		},
 	}
