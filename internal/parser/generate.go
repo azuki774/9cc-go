@@ -8,10 +8,17 @@ func genInitCode() {
 	generatingCode = append(generatingCode, ".intel_syntax noprefix\n")
 	generatingCode = append(generatingCode, ".globl main\n")
 	generatingCode = append(generatingCode, "main:\n")
+	generatingCode = append(generatingCode, "push rbp\n")
+	generatingCode = append(generatingCode, "mov rbp, rsp\n") // rbp のアドレス = rsp のアドレス
+	generatingCode = append(generatingCode, "sub rsp, 208\n") // ローカル変数用に容量確保
 }
 
 func genEndCode() {
-	generatingCode = append(generatingCode, "pop rax\n")
+	// 関数を呼び出す前にスタックの状態を戻す
+	generatingCode = append(generatingCode, "mov rsp, rbp\n")
+	generatingCode = append(generatingCode, "pop rbp\n")
+
+	// raw に入っている値を return する
 	generatingCode = append(generatingCode, "ret\n")
 }
 
@@ -59,9 +66,14 @@ func genCode(node *abstSyntaxNode) {
 	generatingCode = append(generatingCode, "push rax\n")
 }
 
-func GenAssembleMain(node *abstSyntaxNode) (codes []string, err error) {
+func GenAssembleMain(nodes []*abstSyntaxNode) (codes []string, err error) {
 	genInitCode()
-	genCode(node)
+	for _, node := range nodes {
+		genCode(node)
+
+		// 各式の計算結果をスタックからraxにpop
+		generatingCode = append(generatingCode, "pop rax\n")
+	}
 	genEndCode()
 	return generatingCode, nil
 }

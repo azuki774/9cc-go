@@ -21,12 +21,18 @@ var (
 	TK_LTQ             = 24 // <=
 	TK_GT              = 25 // >
 	TK_GTQ             = 26 // >=
+	TK_EQ              = 27 // =
+	TK_SEMICOLON       = 31 // ;
+	TK_VAR             = 101
 	TK_EOF             = 255
+
+	// Token category in kind
+	TK_LIST_IDENT = []int{TK_VAR}
 )
 
 var (
 	// parser用
-	TK_SYMBOL_LIST = []byte{BYTE_SYMBOL_ADD, BYTE_SYMBOL_SUB, BYTE_SYMBOL_MUL, BYTE_SYMBOL_DIV, BYTE_LEFTPAT, BYTE_RIGHTPAT, BYTE_EQUAL, BYTE_EXC, BYTE_LT, BYTE_GT}
+	TK_SYMBOL_LIST = []byte{BYTE_SYMBOL_ADD, BYTE_SYMBOL_SUB, BYTE_SYMBOL_MUL, BYTE_SYMBOL_DIV, BYTE_LEFTPAT, BYTE_RIGHTPAT, BYTE_EQUAL, BYTE_EXC, BYTE_LT, BYTE_GT, BYTE_SEMICOLON}
 	TK_SPACE       = []byte{BYTE_SPACE}                             // スペース
 	TK_DIGIT       = []byte{47, 48, 49, 50, 51, 52, 53, 54, 55, 56} // 0 - 9
 )
@@ -43,6 +49,7 @@ var (
 	BYTE_EXC        = byte(33)
 	BYTE_LT         = byte(60) // <
 	BYTE_GT         = byte(62) // >
+	BYTE_SEMICOLON  = byte(59) // ;
 )
 
 type Token struct {
@@ -115,7 +122,7 @@ func getNextToken(ss *stringStream) (token Token, err error) {
 					ss.nextChar() // =
 					token = Token{kind: TK_COMP}
 				} else {
-					// TODO: 代入
+					token = Token{kind: TK_EQ}
 				}
 			case BYTE_EXC:
 				// !=
@@ -142,7 +149,10 @@ func getNextToken(ss *stringStream) (token Token, err error) {
 				} else {
 					token = Token{kind: TK_GT} // >
 				}
+			case BYTE_SEMICOLON:
+				token = Token{kind: TK_SEMICOLON}
 			}
+
 			break
 		}
 
@@ -175,11 +185,8 @@ func isContinueLoadNextChar(b byte, token Token) bool {
 	}
 
 	if b == BYTE_SPACE {
-		if token.kind == TK_UNDEFINED {
-			return true
-		}
 		// 既になんらかの文字を読み込んでいたらTokenの切れ目
-		return false
+		return token.kind == TK_UNDEFINED
 	}
 
 	if token.kind == TK_NUM && contains(b, TK_SYMBOL_LIST) {

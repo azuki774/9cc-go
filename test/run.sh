@@ -33,4 +33,5 @@ ${NOWDIR}/verify.sh ${NOWDIR}/src/1-4-2.c 1 || exit 1
 ${NOWDIR}/verify.sh ${NOWDIR}/src/1-5-0.c 1 || exit 1
 ${NOWDIR}/verify.sh ${NOWDIR}/src/1-5-1.c 1 || exit 1
 ${NOWDIR}/verify.sh ${NOWDIR}/src/1-5-2.c 0 || exit 1
+${NOWDIR}/verify.sh ${NOWDIR}/src/2-0-1.c 123 || exit 1
 echo "All test passed"
