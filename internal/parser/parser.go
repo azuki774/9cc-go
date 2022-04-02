@@ -17,13 +17,15 @@ var (
 	ND_NOTEQ     = 22 // !=
 	ND_LT        = 23 // <
 	ND_LTQ       = 24 // <=
+	ND_EQ        = 25 // =
+	ND_LVAR      = 31 // local variable
 )
 
 type abstSyntaxNode struct {
 	nodeKind  int
 	leftNode  *abstSyntaxNode
 	rightNode *abstSyntaxNode
-	value     interface{}
+	value     interface{} // num の値や、local variable の offset を入れる
 }
 
 func makeNewAbstSyntaxNode(nodeKind int, leftNode *abstSyntaxNode, rightNode *abstSyntaxNode, value interface{}) *abstSyntaxNode {
@@ -55,8 +57,8 @@ func Expr_assign() (node *abstSyntaxNode) {
 
 	nToken := ts.nextPeekToken()
 	if nToken.kind == TK_EQ {
-		ts.nextToken()
-		node = makeNewAbstSyntaxNode(ND_COMP, node, Expr_assign(), nil) // WIP: ND
+		ts.nextToken() // =
+		node = makeNewAbstSyntaxNode(ND_EQ, node, Expr_assign(), nil)
 	}
 
 	return node
@@ -189,16 +191,20 @@ func Expr_unary() (node *abstSyntaxNode) {
 }
 
 func Expr_primary() (node *abstSyntaxNode) {
-	// primary = num | "(" expr ")"
+	// primary = num | ident | "(" expr ")"
 	nToken := ts.nextPeekToken()
-	if nToken.kind == TK_SYMBOL_LEFTPAT {
+	switch nToken.kind {
+	case TK_SYMBOL_LEFTPAT: // ( expr )
 		ts.nextToken() // (
 		node = Expr_expr()
 		ts.nextToken() // )
-		return node
+	case TK_NUM:
+		node = makeNewAbstSyntaxNode(ND_NUM, nil, nil, ts.nextToken().value) // Token は 1つ進む
+	case TK_IDENT:
+		offset := ((ts.nextToken().value.(string))[0] - 'a' + 1) * 8 // TEMPORARY : 1文字変数用の暫定対応
+		node = makeNewAbstSyntaxNode(ND_LVAR, nil, nil, int(offset)) // Token は 1つ進む
 	}
-	node = makeNewAbstSyntaxNode(ND_NUM, nil, nil, ts.nextToken().value) // Token は 1つ進む
-	// Tokenは1つ進む
+
 	return node
 }
 

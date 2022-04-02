@@ -8,26 +8,26 @@ import (
 var (
 	// Token.kind に入る
 	TK_UNDEFINED       = 0
-	TK_NUM             = 1
+	TK_NUM             = 1 // Token.Value -> int
 	TK_SYMBOL_ADD      = 11
 	TK_SYMBOL_SUB      = 12
 	TK_SYMBOL_MUL      = 13
 	TK_SYMBOL_DIV      = 14
 	TK_SYMBOL_LEFTPAT  = 15
 	TK_SYMBOL_RIGHTPAT = 16
-	TK_COMP            = 21 // ==
-	TK_NOTEQ           = 22 // !=
-	TK_LT              = 23 // <
-	TK_LTQ             = 24 // <=
-	TK_GT              = 25 // >
-	TK_GTQ             = 26 // >=
-	TK_EQ              = 27 // =
-	TK_SEMICOLON       = 31 // ;
-	TK_VAR             = 101
+	TK_COMP            = 21  // ==
+	TK_NOTEQ           = 22  // !=
+	TK_LT              = 23  // <
+	TK_LTQ             = 24  // <=
+	TK_GT              = 25  // >
+	TK_GTQ             = 26  // >=
+	TK_EQ              = 27  // =
+	TK_SEMICOLON       = 31  // ;
+	TK_IDENT           = 101 // Token.Value -> string (name)
 	TK_EOF             = 255
 
 	// Token category in kind
-	TK_LIST_IDENT = []int{TK_VAR}
+	TK_LIST_IDENT = []int{TK_IDENT}
 )
 
 var (
@@ -63,6 +63,8 @@ func (token *Token) Show() {
 		fmt.Printf("TK_UNDEFINED\n")
 	case TK_NUM:
 		fmt.Printf("TK_NUM : %d\n", token.value.(int))
+	case TK_IDENT:
+		fmt.Printf("TK_IDENT : %s\n", token.value.(string))
 	case TK_EOF:
 		fmt.Printf("TK_EOF\n")
 	default:
@@ -156,7 +158,7 @@ func getNextToken(ss *stringStream) (token Token, err error) {
 			break
 		}
 
-		if contains(nChar, TK_DIGIT) {
+		if contains(nChar, TK_DIGIT) { // 0 - 9
 			if token.kind == TK_UNDEFINED || token.kind == TK_NUM {
 				token.kind = TK_NUM
 				numString += string(nChar)
@@ -164,7 +166,13 @@ func getNextToken(ss *stringStream) (token Token, err error) {
 				return Token{}, fmt.Errorf("getNextToken : digit tokenize error")
 			}
 		}
+
+		if byte(97) <= nChar && nChar <= byte(122) { // a <= nChar <= z
+			token = Token{kind: TK_IDENT, value: string(nChar)}
+		}
 	}
+
+	// 読み込み後の後処理
 
 	// 数値のときはToken.Valueに数値を移す
 	if token.kind == TK_NUM {
