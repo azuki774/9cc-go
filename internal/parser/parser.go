@@ -1,5 +1,7 @@
 package parser
 
+import "fmt"
+
 var (
 	ts *tokenStream
 )
@@ -28,12 +30,34 @@ func makeNewAbstSyntaxNode(nodeKind int, leftNode *abstSyntaxNode, rightNode *ab
 	return &abstSyntaxNode{nodeKind: nodeKind, leftNode: leftNode, rightNode: rightNode, value: value}
 }
 
-func Expr_expr() (node *abstSyntaxNode) {
-	// expr = equality
-	if !ts.ok() {
-		return nil
+func Expr_stmt() (node *abstSyntaxNode) {
+	// stmt = expr ";"
+	node = Expr_expr()
+	nToken := ts.nextPeekToken()
+	if nToken.kind != TK_SEMICOLON {
+		panic(fmt.Errorf("Expr_stmt : not found semicolon"))
 	}
+
+	ts.nextToken() // ;
+	return node
+}
+
+func Expr_expr() (node *abstSyntaxNode) {
+	// expr = assign
+	node = Expr_assign()
+
+	return node
+}
+
+func Expr_assign() (node *abstSyntaxNode) {
+	// assign = equality ("=" assign)?
 	node = Expr_equality()
+
+	nToken := ts.nextPeekToken()
+	if nToken.kind == TK_EQ {
+		ts.nextToken()
+		node = makeNewAbstSyntaxNode(ND_COMP, node, Expr_assign(), nil) // WIP: ND
+	}
 
 	return node
 }
@@ -178,8 +202,15 @@ func Expr_primary() (node *abstSyntaxNode) {
 	return node
 }
 
-func ParserMain(tokens []Token) (topNode *abstSyntaxNode) {
+func ParserMain(tokens []Token) (topNodes []*abstSyntaxNode) {
 	ts = newTokenStream(tokens)
-	topNode = Expr_expr()
-	return topNode
+	for {
+		if !ts.ok() {
+			break
+		}
+
+		topNode := Expr_stmt()
+		topNodes = append(topNodes, topNode)
+	}
+	return topNodes
 }
