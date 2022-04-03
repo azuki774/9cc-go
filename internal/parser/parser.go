@@ -19,6 +19,7 @@ var (
 	ND_LTQ       = 24 // <=
 	ND_EQ        = 25 // =
 	ND_LVAR      = 31 // local variable
+	ND_RETURN    = 41
 )
 
 type abstSyntaxNode struct {
@@ -35,13 +36,21 @@ func makeNewAbstSyntaxNode(nodeKind int, leftNode *abstSyntaxNode, rightNode *ab
 }
 
 func Expr_stmt() (node *abstSyntaxNode) {
-	// stmt = expr ";"
-	node = Expr_expr()
+	// stmt = expr ";" | "return" expr ";"
 	nToken := ts.nextPeekToken()
+	if nToken.kind == TK_RETURN {
+		// return a
+		ts.nextToken() // return
+		node = makeNewAbstSyntaxNode(ND_RETURN, Expr_expr(), nil, nil)
+	} else {
+		// expr
+		node = Expr_expr()
+	}
+
+	nToken = ts.nextPeekToken() // ;
 	if nToken.kind != TK_SEMICOLON {
 		panic(fmt.Errorf("Expr_stmt : not found semicolon"))
 	}
-
 	ts.nextToken() // ;
 	return node
 }
