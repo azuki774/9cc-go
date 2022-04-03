@@ -58,6 +58,15 @@ func genCode(node *abstSyntaxNode) {
 		generatingCode = append(generatingCode, "mov [rax], rdi\n") // 変数の値を直接右辺に書き換える
 		generatingCode = append(generatingCode, "push rdi\n")
 		return
+	case ND_RETURN:
+		genCode(node.leftNode) // return する値を評価するコード
+		generatingCode = append(generatingCode, "pop rax\n")
+		// スタックを関数呼び出し前に戻す
+		generatingCode = append(generatingCode, "mov rsp, rbp\n")
+		generatingCode = append(generatingCode, "pop rbp\n")
+
+		generatingCode = append(generatingCode, "ret\n")
+		return
 	}
 
 	genCode(node.leftNode)

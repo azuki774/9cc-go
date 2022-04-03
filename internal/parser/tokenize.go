@@ -23,6 +23,7 @@ var (
 	TK_GTQ             = 26  // >=
 	TK_EQ              = 27  // =
 	TK_SEMICOLON       = 31  // ;
+	TK_RETURN          = 50  // return
 	TK_IDENT           = 101 // Token.Value -> string (name)
 	TK_EOF             = 255
 
@@ -108,6 +109,10 @@ func getNextToken(ss *stringStream) (token Token, err error) {
 
 		if (BYTE_a <= nChar && nChar <= BYTE_z) || (BYTE_A <= nChar && nChar <= BYTE_Z) { // a <= nChar <= z or A <= nChar <= Z
 			word := ss.nextWord()
+			if word == "return" {
+				token = Token{kind: TK_RETURN}
+				break
+			}
 			token = Token{kind: TK_IDENT, value: word}
 			break
 		}

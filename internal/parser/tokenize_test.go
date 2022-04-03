@@ -77,6 +77,8 @@ func Test_getNextToken(t *testing.T) {
 	ss14 := newStringStream("=10")
 	ss15 := newStringStream(";")
 	ss16 := newStringStream("a=123")
+	ss17 := newStringStream("ABC=123")
+	ss18 := newStringStream("return 1;")
 	type args struct {
 		ss *stringStream
 	}
@@ -180,6 +182,18 @@ func Test_getNextToken(t *testing.T) {
 			name:      "a",
 			args:      args{ss: ss16},
 			wantToken: Token{kind: TK_IDENT, value: "a"},
+			wantErr:   false,
+		},
+		{
+			name:      "ABC",
+			args:      args{ss: ss17},
+			wantToken: Token{kind: TK_IDENT, value: "ABC"},
+			wantErr:   false,
+		},
+		{
+			name:      "return",
+			args:      args{ss: ss18},
+			wantToken: Token{kind: TK_RETURN},
 			wantErr:   false,
 		},
 	}
