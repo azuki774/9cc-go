@@ -9,6 +9,4 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 )
 
-replace (
-	github.com/azuki774/9cc-go/internal/compiler => ./internal/compile
-)
+replace github.com/azuki774/9cc-go/internal/compiler => ./internal/compile

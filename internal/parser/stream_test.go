@@ -238,3 +238,107 @@ func Test_tokenStream_nextPeekToken(t *testing.T) {
 		})
 	}
 }
+
+func Test_stringStream_isNextWordCharNoPrefix(t *testing.T) {
+	ss1 := newStringStream("hoge")
+	ss2 := newStringStream("HuGa")
+	ss3 := newStringStream("0123")
+	ss4 := newStringStream("_")
+	ss5 := newStringStream(";")
+	ss6 := newStringStream("(")
+	ss7 := newStringStream("-")
+	tests := []struct {
+		name string
+		ss   *stringStream
+		want bool
+	}{
+		{
+			name: "test1",
+			ss:   ss1,
+			want: true,
+		},
+		{
+			name: "test2",
+			ss:   ss2,
+			want: true,
+		},
+		{
+			name: "test3",
+			ss:   ss3,
+			want: true,
+		},
+		{
+			name: "test4",
+			ss:   ss4,
+			want: true,
+		},
+		{
+			name: "test5",
+			ss:   ss5,
+			want: false,
+		},
+		{
+			name: "test6",
+			ss:   ss6,
+			want: false,
+		},
+		{
+			name: "test7",
+			ss:   ss7,
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.ss.isNextWordCharNoPrefix(); got != tt.want {
+				t.Errorf("stringStream.isNextWordCharNoPrefix() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_stringStream_nextWord(t *testing.T) {
+	ss1 := newStringStream("hoge")
+	ss2 := newStringStream("fuga0123")
+	ss3 := newStringStream("return;")
+	ss4 := newStringStream("abc+def")
+	ss5 := newStringStream("sepa = rate")
+	tests := []struct {
+		name  string
+		ss    *stringStream
+		wantS string
+	}{
+		{
+			name:  "test1",
+			ss:    ss1,
+			wantS: "hoge",
+		},
+		{
+			name:  "test2",
+			ss:    ss2,
+			wantS: "fuga0123",
+		},
+		{
+			name:  "test3",
+			ss:    ss3,
+			wantS: "return",
+		},
+		{
+			name:  "test4",
+			ss:    ss4,
+			wantS: "abc",
+		},
+		{
+			name:  "test5",
+			ss:    ss5,
+			wantS: "sepa",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if gotS := tt.ss.nextWord(); gotS != tt.wantS {
+				t.Errorf("stringStream.nextWord() = %v, want %v", gotS, tt.wantS)
+			}
+		})
+	}
+}

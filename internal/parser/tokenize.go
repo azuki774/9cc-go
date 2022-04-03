@@ -50,6 +50,11 @@ var (
 	BYTE_LT         = byte(60) // <
 	BYTE_GT         = byte(62) // >
 	BYTE_SEMICOLON  = byte(59) // ;
+	BYTE_UNDERBAR   = byte(95) // _
+	BYTE_a          = byte(97)
+	BYTE_A          = byte(65)
+	BYTE_z          = byte(122)
+	BYTE_Z          = byte(90)
 )
 
 type Token struct {
@@ -98,6 +103,12 @@ func getNextToken(ss *stringStream) (token Token, err error) {
 		// 次の文字が見て読むべきかどうか判定
 		nChar := ss.nextPeekChar()
 		if !isContinueLoadNextChar(nChar, token) {
+			break
+		}
+
+		if (BYTE_a <= nChar && nChar <= BYTE_z) || (BYTE_A <= nChar && nChar <= BYTE_Z) { // a <= nChar <= z or A <= nChar <= Z
+			word := ss.nextWord()
+			token = Token{kind: TK_IDENT, value: word}
 			break
 		}
 
@@ -167,9 +178,6 @@ func getNextToken(ss *stringStream) (token Token, err error) {
 			}
 		}
 
-		if byte(97) <= nChar && nChar <= byte(122) { // a <= nChar <= z
-			token = Token{kind: TK_IDENT, value: string(nChar)}
-		}
 	}
 
 	// 読み込み後の後処理
