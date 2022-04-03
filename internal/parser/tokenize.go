@@ -15,15 +15,19 @@ var (
 	TK_SYMBOL_DIV      = 14
 	TK_SYMBOL_LEFTPAT  = 15
 	TK_SYMBOL_RIGHTPAT = 16
-	TK_COMP            = 21  // ==
-	TK_NOTEQ           = 22  // !=
-	TK_LT              = 23  // <
-	TK_LTQ             = 24  // <=
-	TK_GT              = 25  // >
-	TK_GTQ             = 26  // >=
-	TK_EQ              = 27  // =
-	TK_SEMICOLON       = 31  // ;
-	TK_RETURN          = 50  // return
+	TK_COMP            = 21 // ==
+	TK_NOTEQ           = 22 // !=
+	TK_LT              = 23 // <
+	TK_LTQ             = 24 // <=
+	TK_GT              = 25 // >
+	TK_GTQ             = 26 // >=
+	TK_EQ              = 27 // =
+	TK_SEMICOLON       = 31 // ;
+	TK_RETURN          = 50 // return
+	TK_IF              = 51
+	TK_ELSE            = 52
+	TK_WHILE           = 53
+	TK_FOR             = 54
 	TK_IDENT           = 101 // Token.Value -> string (name)
 	TK_EOF             = 255
 
@@ -109,12 +113,22 @@ func getNextToken(ss *stringStream) (token Token, err error) {
 
 		if (BYTE_a <= nChar && nChar <= BYTE_z) || (BYTE_A <= nChar && nChar <= BYTE_Z) { // a <= nChar <= z or A <= nChar <= Z
 			word := ss.nextWord()
-			if word == "return" {
+			switch word {
+			case "return":
 				token = Token{kind: TK_RETURN}
-				break
+			case "if":
+				token = Token{kind: TK_IF}
+			case "else":
+				token = Token{kind: TK_ELSE}
+			case "while":
+				token = Token{kind: TK_WHILE}
+			case "for":
+				token = Token{kind: TK_FOR}
+			default:
+				token = Token{kind: TK_IDENT, value: word}
 			}
-			token = Token{kind: TK_IDENT, value: word}
-			break
+
+			return
 		}
 
 		ss.nextChar() // ポインタだけすすめる
