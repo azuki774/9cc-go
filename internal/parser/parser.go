@@ -28,6 +28,8 @@ type abstSyntaxNode struct {
 	value     interface{} // num の値や、local variable の offset を入れる
 }
 
+var localVar map[string]int // varName -> offset
+
 func makeNewAbstSyntaxNode(nodeKind int, leftNode *abstSyntaxNode, rightNode *abstSyntaxNode, value interface{}) *abstSyntaxNode {
 	return &abstSyntaxNode{nodeKind: nodeKind, leftNode: leftNode, rightNode: rightNode, value: value}
 }
@@ -201,14 +203,24 @@ func Expr_primary() (node *abstSyntaxNode) {
 	case TK_NUM:
 		node = makeNewAbstSyntaxNode(ND_NUM, nil, nil, ts.nextToken().value) // Token は 1つ進む
 	case TK_IDENT:
-		offset := ((ts.nextToken().value.(string))[0] - 'a' + 1) * 8 // TEMPORARY : 1文字変数用の暫定対応
-		node = makeNewAbstSyntaxNode(ND_LVAR, nil, nil, int(offset)) // Token は 1つ進む
+		name := nToken.value.(string)
+		if offset, ok := localVar[name]; ok {
+			// 変数が定義済
+			node = makeNewAbstSyntaxNode(ND_LVAR, nil, nil, int(offset))
+		} else {
+			// 変数が初出
+			offset = (len(localVar) + 1) * 8
+			localVar[name] = offset
+			node = makeNewAbstSyntaxNode(ND_LVAR, nil, nil, int(offset))
+		}
+		ts.nextToken() // 変数トークンを消化する
 	}
 
 	return node
 }
 
 func ParserMain(tokens []Token) (topNodes []*abstSyntaxNode) {
+	localVar = map[string]int{}
 	ts = newTokenStream(tokens)
 	for {
 		if !ts.ok() {
