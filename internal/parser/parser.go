@@ -18,6 +18,9 @@ var (
 	ND_EQ        = 25 // =
 	ND_LVAR      = 31 // local variable
 	ND_RETURN    = 41
+	ND_IF        = 42
+	ND_ELSE      = 43
+	ND_IFELSE    = 44 // elseありのIF
 )
 
 type abstSyntaxNode struct {
@@ -46,7 +49,40 @@ func Expr_stmt() (node *abstSyntaxNode, err error) {
 		}
 		node = makeNewAbstSyntaxNode(ND_RETURN, e, nil, nil)
 	case TK_IF:
-		ts.nextToken() // if
+		ts.nextToken()                                               // if
+		err = ts.nextExpectReadToken(Token{kind: TK_SYMBOL_LEFTPAT}) // (
+		if err != nil {
+			return nil, err
+		}
+
+		eA, err := Expr_expr()
+		if err != nil {
+			return nil, err
+		}
+
+		err = ts.nextExpectReadToken(Token{kind: TK_SYMBOL_RIGHTPAT}) // )
+		if err != nil {
+			return nil, err
+		}
+
+		eB, err := Expr_stmt()
+		if err != nil {
+			return nil, err
+		}
+
+		if ts.nextPeekToken().kind == TK_ELSE {
+			ts.nextToken() // else
+			eC, err := Expr_stmt()
+			if err != nil {
+				return nil, err
+			}
+			nodeSuc := makeNewAbstSyntaxNode(ND_ELSE, eB, eC, nil)
+			node = makeNewAbstSyntaxNode(ND_IFELSE, eA, nodeSuc, nil)
+		} else {
+			node = makeNewAbstSyntaxNode(ND_IF, eA, eB, nil)
+		}
+
+		return node, nil
 	default:
 		node, err = Expr_expr()
 		if err != nil {

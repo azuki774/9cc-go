@@ -68,6 +68,29 @@ func genCode(node *abstSyntaxNode) {
 
 		generatingCode = append(generatingCode, "ret\n")
 		return
+	case ND_IF:
+		// if (A) B
+		jumpLabel++
+		genCode(node.leftNode) // A
+		generatingCode = append(generatingCode, "pop rax\n")
+		generatingCode = append(generatingCode, "cmp rax, 0\n")
+		generatingCode = append(generatingCode, fmt.Sprintf("je  .Lend%d\n", jumpLabel))
+		genCode(node.rightNode) // B
+		generatingCode = append(generatingCode, fmt.Sprintf(".Lend%d:\n", jumpLabel))
+		return
+	case ND_IFELSE:
+		// if (A) B else C
+		jumpLabel++
+		genCode(node.leftNode) // A
+		generatingCode = append(generatingCode, "pop rax\n")
+		generatingCode = append(generatingCode, "cmp rax, 0\n")
+		generatingCode = append(generatingCode, fmt.Sprintf("je  .Lelse%d\n", jumpLabel))
+		genCode(node.rightNode.leftNode) // B
+		generatingCode = append(generatingCode, fmt.Sprintf("jmp .Lend%d\n", jumpLabel))
+		generatingCode = append(generatingCode, fmt.Sprintf(".Lelse%d:\n", jumpLabel))
+		genCode(node.rightNode.rightNode) // C
+		generatingCode = append(generatingCode, fmt.Sprintf(".Lend%d:\n", jumpLabel))
+		return
 	}
 
 	genCode(node.leftNode)
