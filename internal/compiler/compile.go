@@ -35,7 +35,11 @@ func CompileMain(OutputFileName string, SourceFileName string, showTokenize bool
 			token.Show()
 		}
 	}
-	topNode := parser.ParserMain(tokens)
+	topNode, err := parser.ParserMain(tokens)
+	if err != nil {
+		return err
+	}
+
 	codes, _ := parser.GenAssembleMain(topNode)
 
 	err = stringsWriter(OutputFile, codes)

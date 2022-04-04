@@ -3,6 +3,7 @@ package parser
 import "fmt"
 
 var generatingCode []string // 生成するアセンブリコード
+var jumpLabel = 0
 
 func genInitCode() {
 	generatingCode = append(generatingCode, ".intel_syntax noprefix\n")
