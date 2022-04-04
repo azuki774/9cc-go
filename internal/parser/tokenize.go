@@ -67,34 +67,18 @@ type Token struct {
 	value interface{}
 }
 
-func (token *Token) Show() {
-	switch token.kind {
-	case TK_UNDEFINED:
-		fmt.Printf("TK_UNDEFINED\n")
-	case TK_NUM:
-		fmt.Printf("TK_NUM : %d\n", token.value.(int))
-	case TK_IDENT:
-		fmt.Printf("TK_IDENT : %s\n", token.value.(string))
-	case TK_EOF:
-		fmt.Printf("TK_EOF\n")
-	default:
-		fmt.Printf("TK_SYMBOL : %d\n", token.kind)
-	}
-
-}
-
 func (token *Token) ShowString() (str string) {
 	switch token.kind {
 	case TK_UNDEFINED:
 		str = "TK_UNDEFINED"
 	case TK_NUM:
-		str = fmt.Sprintf("TK_NUM : %d", token.value.(int))
+		str = fmt.Sprintf("TK_NUM: %d", token.value.(int))
 	case TK_IDENT:
-		str = fmt.Sprintf("TK_IDENT : %s", token.value.(string))
+		str = fmt.Sprintf("TK_IDENT: %s", token.value.(string))
 	case TK_EOF:
 		str = "TK_EOF"
 	default:
-		str = fmt.Sprintf("TK_SYMBOL : %d", token.kind)
+		str = fmt.Sprintf("TK_SYMBOL: %d", token.kind)
 	}
 	return str
 }
