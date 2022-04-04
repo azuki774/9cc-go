@@ -1,7 +1,5 @@
 package parser
 
-import "fmt"
-
 var (
 	ts *tokenStream
 )
@@ -56,11 +54,10 @@ func Expr_stmt() (node *abstSyntaxNode, err error) {
 		}
 	}
 
-	nToken = ts.nextPeekToken() // ;
-	if nToken.kind != TK_SEMICOLON {
-		return nil, fmt.Errorf("Expr_stmt : not found semicolon")
+	err = ts.nextExpectReadToken(Token{kind: TK_SEMICOLON}) // ;
+	if err != nil {
+		return nil, err
 	}
-	ts.nextToken() // ;
 	return node, nil
 }
 
@@ -296,7 +293,10 @@ func Expr_primary() (node *abstSyntaxNode, err error) {
 		if err != nil {
 			return nil, err
 		}
-		ts.nextToken() // )
+		err = ts.nextExpectReadToken(Token{kind: TK_SYMBOL_RIGHTPAT}) // )
+		if err != nil {
+			return nil, err
+		}
 	case TK_NUM:
 		node = makeNewAbstSyntaxNode(ND_NUM, nil, nil, ts.nextToken().value) // Token は 1つ進む
 	case TK_IDENT:

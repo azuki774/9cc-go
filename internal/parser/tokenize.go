@@ -83,6 +83,22 @@ func (token *Token) Show() {
 
 }
 
+func (token *Token) ShowString() (str string) {
+	switch token.kind {
+	case TK_UNDEFINED:
+		str = "TK_UNDEFINED"
+	case TK_NUM:
+		str = fmt.Sprintf("TK_NUM : %d", token.value.(int))
+	case TK_IDENT:
+		str = fmt.Sprintf("TK_IDENT : %s", token.value.(string))
+	case TK_EOF:
+		str = "TK_EOF"
+	default:
+		str = fmt.Sprintf("TK_SYMBOL : %d", token.kind)
+	}
+	return str
+}
+
 // b が bs に含まれるかどうか []byte版
 func contains(b byte, bs []byte) bool {
 	for _, v := range bs {
