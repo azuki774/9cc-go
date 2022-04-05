@@ -6,7 +6,8 @@ var (
 
 var (
 	ND_UNDEFINED = 0
-	ND_NUM       = 1
+	ND_NIL       = 1 // nil (no code)
+	ND_NUM       = 10
 	ND_ADD       = 11
 	ND_SUB       = 12
 	ND_MUL       = 13
@@ -21,6 +22,8 @@ var (
 	ND_IF        = 42
 	ND_ELSE      = 43
 	ND_IFELSE    = 44 // elseありのIF
+	ND_WHILE     = 45
+	ND_FOR       = 46
 )
 
 type abstSyntaxNode struct {
@@ -83,6 +86,94 @@ func Expr_stmt() (node *abstSyntaxNode, err error) {
 		}
 
 		return node, nil
+	case TK_WHILE:
+		// "while" "(" expr ")" stmt
+		ts.nextToken() // while
+		err = ts.nextExpectReadToken(Token{kind: TK_SYMBOL_LEFTPAT})
+		if err != nil {
+			return nil, err
+		}
+
+		eA, err := Expr_expr()
+		if err != nil {
+			return nil, err
+		}
+
+		err = ts.nextExpectReadToken(Token{kind: TK_SYMBOL_RIGHTPAT})
+		if err != nil {
+			return nil, err
+		}
+
+		eB, err := Expr_stmt()
+		if err != nil {
+			return nil, err
+		}
+
+		node = makeNewAbstSyntaxNode(ND_WHILE, eA, eB, nil)
+		return node, nil
+	case TK_FOR:
+		// "for" "(" expr? ";" expr? ";" expr? ")" stmt
+		// for (A; B; C) D
+
+		ts.nextToken() // for
+		err = ts.nextExpectReadToken(Token{kind: TK_SYMBOL_LEFTPAT})
+		if err != nil {
+			return nil, err
+		}
+
+		var eA *abstSyntaxNode = makeNewAbstSyntaxNode(ND_NIL, nil, nil, nil)
+		var eB *abstSyntaxNode = makeNewAbstSyntaxNode(ND_NIL, nil, nil, nil)
+		var eC *abstSyntaxNode = makeNewAbstSyntaxNode(ND_NIL, nil, nil, nil)
+
+		// A
+		if ts.nextPeekToken().kind != TK_SEMICOLON {
+			eA, err = Expr_expr()
+			if err != nil {
+				return nil, err
+			}
+		}
+		err = ts.nextExpectReadToken(Token{kind: TK_SEMICOLON})
+		if err != nil {
+			return nil, err
+		}
+
+		// B
+		if ts.nextPeekToken().kind != TK_SEMICOLON {
+			eB, err = Expr_expr()
+			if err != nil {
+				return nil, err
+			}
+		}
+		err = ts.nextExpectReadToken(Token{kind: TK_SEMICOLON})
+		if err != nil {
+			return nil, err
+		}
+
+		// C
+		if ts.nextPeekToken().kind != TK_SYMBOL_RIGHTPAT {
+			eC, err = Expr_expr()
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		err = ts.nextExpectReadToken(Token{kind: TK_SYMBOL_RIGHTPAT})
+		if err != nil {
+			return nil, err
+		}
+
+		eD, err := Expr_stmt()
+		if err != nil {
+			return nil, err
+		}
+
+		// for (A; B; C) D
+		eAB := makeNewAbstSyntaxNode(ND_UNDEFINED, eA, eB, nil)
+		eCD := makeNewAbstSyntaxNode(ND_UNDEFINED, eC, eD, nil)
+		node = makeNewAbstSyntaxNode(ND_FOR, eAB, eCD, nil)
+
+		return node, nil
+
 	default:
 		node, err = Expr_expr()
 		if err != nil {
