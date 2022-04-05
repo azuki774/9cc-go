@@ -84,6 +84,8 @@ func Test_getNextToken(t *testing.T) {
 	ss21 := newStringStream("while")
 	ss22 := newStringStream("for")
 	ss23 := newStringStream(";;")
+	ss24 := newStringStream("{xxxxx")
+	ss25 := newStringStream("}yyyyy")
 	type args struct {
 		ss *stringStream
 	}
@@ -229,6 +231,18 @@ func Test_getNextToken(t *testing.T) {
 			name:      ";;",
 			args:      args{ss: ss23},
 			wantToken: Token{kind: TK_SEMICOLON},
+			wantErr:   false,
+		},
+		{
+			name:      "{",
+			args:      args{ss: ss24},
+			wantToken: Token{kind: TK_BLOCKL},
+			wantErr:   false,
+		},
+		{
+			name:      "}",
+			args:      args{ss: ss25},
+			wantToken: Token{kind: TK_BLOCKR},
 			wantErr:   false,
 		},
 	}

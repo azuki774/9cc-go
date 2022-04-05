@@ -102,7 +102,7 @@ func (ts *tokenStream) nextPeekToken() (tk Token) {
 func (ts *tokenStream) nextExpectReadToken(expectToken Token) (err error) {
 	actualToken := ts.tokens[ts.index]
 	if actualToken.kind != expectToken.kind {
-		return fmt.Errorf("expect token = %s, but actual = %s", expectToken.ShowString(), actualToken.ShowString())
+		return fmt.Errorf("expect token = %s, but actual = %s : token index %d", expectToken.ShowString(), actualToken.ShowString(), ts.index)
 	}
 	ts.nextToken()
 	return nil
