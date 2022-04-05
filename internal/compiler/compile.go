@@ -32,10 +32,14 @@ func CompileMain(OutputFileName string, SourceFileName string, showTokenize bool
 
 	if showTokenize {
 		for _, token := range tokens {
-			token.Show()
+			fmt.Printf("%s\n", token.ShowString())
 		}
 	}
-	topNode := parser.ParserMain(tokens)
+	topNode, err := parser.ParserMain(tokens)
+	if err != nil {
+		return err
+	}
+
 	codes, _ := parser.GenAssembleMain(topNode)
 
 	err = stringsWriter(OutputFile, codes)
@@ -61,7 +65,7 @@ func TokenizeOnly(SourceFileName string) (err error) {
 	}
 
 	for _, token := range tokens {
-		token.Show()
+		fmt.Printf("%s\n", token.ShowString())
 	}
 
 	return nil

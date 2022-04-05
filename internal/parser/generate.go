@@ -3,6 +3,7 @@ package parser
 import "fmt"
 
 var generatingCode []string // 生成するアセンブリコード
+var jumpLabel = 0
 
 func genInitCode() {
 	generatingCode = append(generatingCode, ".intel_syntax noprefix\n")
@@ -39,6 +40,8 @@ func genLocalVar(node *abstSyntaxNode) {
 func genCode(node *abstSyntaxNode) {
 	// num | local var | = は先に処理する
 	switch node.nodeKind {
+	case ND_NIL:
+		return
 	case ND_NUM:
 		newCode := fmt.Sprintf("push %d\n", node.value.(int))
 		generatingCode = append(generatingCode, newCode)
@@ -66,6 +69,60 @@ func genCode(node *abstSyntaxNode) {
 		generatingCode = append(generatingCode, "pop rbp\n")
 
 		generatingCode = append(generatingCode, "ret\n")
+		return
+	case ND_IF:
+		// if (A) B
+		jumpLabel++
+		genCode(node.leftNode) // A
+		generatingCode = append(generatingCode, "pop rax\n")
+		generatingCode = append(generatingCode, "cmp rax, 0\n")
+		generatingCode = append(generatingCode, fmt.Sprintf("je  .Lend%d\n", jumpLabel))
+		genCode(node.rightNode) // B
+		generatingCode = append(generatingCode, fmt.Sprintf(".Lend%d:\n", jumpLabel))
+		return
+	case ND_IFELSE:
+		// if (A) B else C
+		jumpLabel++
+		genCode(node.leftNode) // A
+		generatingCode = append(generatingCode, "pop rax\n")
+		generatingCode = append(generatingCode, "cmp rax, 0\n")
+		generatingCode = append(generatingCode, fmt.Sprintf("je  .Lelse%d\n", jumpLabel))
+		genCode(node.rightNode.leftNode) // B
+		generatingCode = append(generatingCode, fmt.Sprintf("jmp .Lend%d\n", jumpLabel))
+		generatingCode = append(generatingCode, fmt.Sprintf(".Lelse%d:\n", jumpLabel))
+		genCode(node.rightNode.rightNode) // C
+		generatingCode = append(generatingCode, fmt.Sprintf(".Lend%d:\n", jumpLabel))
+		return
+	case ND_WHILE:
+		// while (A) B
+		jumpLabel++
+		generatingCode = append(generatingCode, fmt.Sprintf(".Lbegin%d:\n", jumpLabel))
+		genCode(node.leftNode) // A
+		generatingCode = append(generatingCode, "pop rax\n")
+		generatingCode = append(generatingCode, "cmp rax, 0\n")
+		generatingCode = append(generatingCode, fmt.Sprintf("je  .Lend%d\n", jumpLabel))
+		genCode(node.rightNode) // B
+		generatingCode = append(generatingCode, fmt.Sprintf("jmp .Lbegin%d\n", jumpLabel))
+		generatingCode = append(generatingCode, fmt.Sprintf(".Lend%d:\n", jumpLabel))
+		return
+	case ND_FOR:
+		// for (A; B; C) D
+		jumpLabel++
+		A := node.leftNode.leftNode
+		B := node.leftNode.rightNode
+		C := node.rightNode.leftNode
+		D := node.rightNode.rightNode
+
+		genCode(A)
+		generatingCode = append(generatingCode, fmt.Sprintf(".Lbegin%d:\n", jumpLabel))
+		genCode(B)
+		generatingCode = append(generatingCode, "pop rax\n")
+		generatingCode = append(generatingCode, "cmp rax, 0\n")
+		generatingCode = append(generatingCode, fmt.Sprintf("je  .Lend%d\n", jumpLabel))
+		genCode(D)
+		genCode(C)
+		generatingCode = append(generatingCode, fmt.Sprintf("jmp .Lbegin%d\n", jumpLabel))
+		generatingCode = append(generatingCode, fmt.Sprintf(".Lend%d:\n", jumpLabel))
 		return
 	}
 

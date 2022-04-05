@@ -1,5 +1,7 @@
 package parser
 
+import "fmt"
+
 type stringStream struct {
 	str   string
 	index int
@@ -94,6 +96,16 @@ func (ts *tokenStream) nextToken() (tk Token) {
 func (ts *tokenStream) nextPeekToken() (tk Token) {
 	tk = ts.tokens[ts.index]
 	return tk
+}
+
+// 予測したTokenが来たら読み、予測以外のTokenが来たらエラーを返す
+func (ts *tokenStream) nextExpectReadToken(expectToken Token) (err error) {
+	actualToken := ts.tokens[ts.index]
+	if actualToken.kind != expectToken.kind {
+		return fmt.Errorf("expect token = %s, but actual = %s", expectToken.ShowString(), actualToken.ShowString())
+	}
+	ts.nextToken()
+	return nil
 }
 
 func newTokenStream(tokens []Token) *tokenStream {

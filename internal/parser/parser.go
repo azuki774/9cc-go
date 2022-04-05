@@ -1,14 +1,13 @@
 package parser
 
-import "fmt"
-
 var (
 	ts *tokenStream
 )
 
 var (
 	ND_UNDEFINED = 0
-	ND_NUM       = 1
+	ND_NIL       = 1 // nil (no code)
+	ND_NUM       = 10
 	ND_ADD       = 11
 	ND_SUB       = 12
 	ND_MUL       = 13
@@ -20,6 +19,11 @@ var (
 	ND_EQ        = 25 // =
 	ND_LVAR      = 31 // local variable
 	ND_RETURN    = 41
+	ND_IF        = 42
+	ND_ELSE      = 43
+	ND_IFELSE    = 44 // elseありのIF
+	ND_WHILE     = 45
+	ND_FOR       = 46
 )
 
 type abstSyntaxNode struct {
@@ -35,60 +39,211 @@ func makeNewAbstSyntaxNode(nodeKind int, leftNode *abstSyntaxNode, rightNode *ab
 	return &abstSyntaxNode{nodeKind: nodeKind, leftNode: leftNode, rightNode: rightNode, value: value}
 }
 
-func Expr_stmt() (node *abstSyntaxNode) {
-	// stmt = expr ";" | "return" expr ";"
+func Expr_stmt() (node *abstSyntaxNode, err error) {
+	// stmt = expr ";" | "return" expr ";" | "if" "(" expr ")" stmt ("else" stmt)?
 	nToken := ts.nextPeekToken()
-	if nToken.kind == TK_RETURN {
+	switch nToken.kind {
+	case TK_RETURN:
 		// return a
 		ts.nextToken() // return
-		node = makeNewAbstSyntaxNode(ND_RETURN, Expr_expr(), nil, nil)
-	} else {
-		// expr
-		node = Expr_expr()
+		e, err := Expr_expr()
+		if err != nil {
+			return nil, err
+		}
+		node = makeNewAbstSyntaxNode(ND_RETURN, e, nil, nil)
+	case TK_IF:
+		ts.nextToken()                                               // if
+		err = ts.nextExpectReadToken(Token{kind: TK_SYMBOL_LEFTPAT}) // (
+		if err != nil {
+			return nil, err
+		}
+
+		eA, err := Expr_expr()
+		if err != nil {
+			return nil, err
+		}
+
+		err = ts.nextExpectReadToken(Token{kind: TK_SYMBOL_RIGHTPAT}) // )
+		if err != nil {
+			return nil, err
+		}
+
+		eB, err := Expr_stmt()
+		if err != nil {
+			return nil, err
+		}
+
+		if ts.nextPeekToken().kind == TK_ELSE {
+			ts.nextToken() // else
+			eC, err := Expr_stmt()
+			if err != nil {
+				return nil, err
+			}
+			nodeSuc := makeNewAbstSyntaxNode(ND_ELSE, eB, eC, nil)
+			node = makeNewAbstSyntaxNode(ND_IFELSE, eA, nodeSuc, nil)
+		} else {
+			node = makeNewAbstSyntaxNode(ND_IF, eA, eB, nil)
+		}
+
+		return node, nil
+	case TK_WHILE:
+		// "while" "(" expr ")" stmt
+		ts.nextToken() // while
+		err = ts.nextExpectReadToken(Token{kind: TK_SYMBOL_LEFTPAT})
+		if err != nil {
+			return nil, err
+		}
+
+		eA, err := Expr_expr()
+		if err != nil {
+			return nil, err
+		}
+
+		err = ts.nextExpectReadToken(Token{kind: TK_SYMBOL_RIGHTPAT})
+		if err != nil {
+			return nil, err
+		}
+
+		eB, err := Expr_stmt()
+		if err != nil {
+			return nil, err
+		}
+
+		node = makeNewAbstSyntaxNode(ND_WHILE, eA, eB, nil)
+		return node, nil
+	case TK_FOR:
+		// "for" "(" expr? ";" expr? ";" expr? ")" stmt
+		// for (A; B; C) D
+
+		ts.nextToken() // for
+		err = ts.nextExpectReadToken(Token{kind: TK_SYMBOL_LEFTPAT})
+		if err != nil {
+			return nil, err
+		}
+
+		var eA *abstSyntaxNode = makeNewAbstSyntaxNode(ND_NIL, nil, nil, nil)
+		var eB *abstSyntaxNode = makeNewAbstSyntaxNode(ND_NIL, nil, nil, nil)
+		var eC *abstSyntaxNode = makeNewAbstSyntaxNode(ND_NIL, nil, nil, nil)
+
+		// A
+		if ts.nextPeekToken().kind != TK_SEMICOLON {
+			eA, err = Expr_expr()
+			if err != nil {
+				return nil, err
+			}
+		}
+		err = ts.nextExpectReadToken(Token{kind: TK_SEMICOLON})
+		if err != nil {
+			return nil, err
+		}
+
+		// B
+		if ts.nextPeekToken().kind != TK_SEMICOLON {
+			eB, err = Expr_expr()
+			if err != nil {
+				return nil, err
+			}
+		}
+		err = ts.nextExpectReadToken(Token{kind: TK_SEMICOLON})
+		if err != nil {
+			return nil, err
+		}
+
+		// C
+		if ts.nextPeekToken().kind != TK_SYMBOL_RIGHTPAT {
+			eC, err = Expr_expr()
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		err = ts.nextExpectReadToken(Token{kind: TK_SYMBOL_RIGHTPAT})
+		if err != nil {
+			return nil, err
+		}
+
+		eD, err := Expr_stmt()
+		if err != nil {
+			return nil, err
+		}
+
+		// for (A; B; C) D
+		eAB := makeNewAbstSyntaxNode(ND_UNDEFINED, eA, eB, nil)
+		eCD := makeNewAbstSyntaxNode(ND_UNDEFINED, eC, eD, nil)
+		node = makeNewAbstSyntaxNode(ND_FOR, eAB, eCD, nil)
+
+		return node, nil
+
+	default:
+		node, err = Expr_expr()
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	nToken = ts.nextPeekToken() // ;
-	if nToken.kind != TK_SEMICOLON {
-		panic(fmt.Errorf("Expr_stmt : not found semicolon"))
+	err = ts.nextExpectReadToken(Token{kind: TK_SEMICOLON}) // ;
+	if err != nil {
+		return nil, err
 	}
-	ts.nextToken() // ;
-	return node
+	return node, nil
 }
 
-func Expr_expr() (node *abstSyntaxNode) {
+func Expr_expr() (node *abstSyntaxNode, err error) {
 	// expr = assign
-	node = Expr_assign()
+	node, err = Expr_assign()
+	if err != nil {
+		return nil, err
+	}
 
-	return node
+	return node, nil
 }
 
-func Expr_assign() (node *abstSyntaxNode) {
+func Expr_assign() (node *abstSyntaxNode, err error) {
 	// assign = equality ("=" assign)?
-	node = Expr_equality()
+	node, err = Expr_equality()
+	if err != nil {
+		return nil, err
+	}
 
 	nToken := ts.nextPeekToken()
 	if nToken.kind == TK_EQ {
 		ts.nextToken() // =
-		node = makeNewAbstSyntaxNode(ND_EQ, node, Expr_assign(), nil)
+		e, err := Expr_assign()
+		if err != nil {
+			return nil, err
+		}
+		node = makeNewAbstSyntaxNode(ND_EQ, node, e, nil)
 	}
 
-	return node
+	return node, nil
 }
 
-func Expr_equality() (node *abstSyntaxNode) {
+func Expr_equality() (node *abstSyntaxNode, err error) {
 	// equality = relational ("==" relational | "!=" relational)*
-	node = Expr_relational()
+	node, err = Expr_relational()
+	if err != nil {
+		return nil, err
+	}
+
 	// == か != があるとき
 	for {
 		nToken := ts.nextPeekToken()
 		switch nToken.kind {
 		case TK_COMP:
 			ts.nextToken()
-			node = makeNewAbstSyntaxNode(ND_COMP, node, Expr_relational(), nil)
+			e, err := Expr_relational()
+			if err != nil {
+				return nil, err
+			}
+			node = makeNewAbstSyntaxNode(ND_COMP, node, e, nil)
 			continue
 		case TK_NOTEQ:
 			ts.nextToken()
-			node = makeNewAbstSyntaxNode(ND_NOTEQ, node, Expr_relational(), nil)
+			e, err := Expr_relational()
+			if err != nil {
+				return nil, err
+			}
+			node = makeNewAbstSyntaxNode(ND_NOTEQ, node, e, nil)
 			continue
 		}
 
@@ -96,33 +251,53 @@ func Expr_equality() (node *abstSyntaxNode) {
 		break
 	}
 
-	return node
+	return node, nil
 }
 
-func Expr_relational() (node *abstSyntaxNode) {
+func Expr_relational() (node *abstSyntaxNode, err error) {
 	// relational = add ("<" add | "<=" add | ">" add | ">=" add)*
-	node = Expr_add()
+	node, err = Expr_add()
+	if err != nil {
+		return nil, err
+	}
+
 	// <, > か <=, >= があるとき
 	for {
 		nToken := ts.nextPeekToken()
 		switch nToken.kind {
 		case TK_LT:
 			ts.nextToken()
-			node = makeNewAbstSyntaxNode(ND_LT, node, Expr_add(), nil)
+			e, err := Expr_add()
+			if err != nil {
+				return nil, err
+			}
+			node = makeNewAbstSyntaxNode(ND_LT, node, e, nil)
 			continue
 		case TK_LTQ:
 			ts.nextToken()
-			node = makeNewAbstSyntaxNode(ND_LTQ, node, Expr_add(), nil)
+			e, err := Expr_add()
+			if err != nil {
+				return nil, err
+			}
+			node = makeNewAbstSyntaxNode(ND_LTQ, node, e, nil)
 			continue
 		case TK_GT:
 			// TK_LT の左右入れ替え
 			ts.nextToken()
-			node = makeNewAbstSyntaxNode(ND_LT, Expr_add(), node, nil)
+			e, err := Expr_add()
+			if err != nil {
+				return nil, err
+			}
+			node = makeNewAbstSyntaxNode(ND_LT, e, node, nil)
 			continue
 		case TK_GTQ:
 			// TK_LTQ の左右入れ替え
 			ts.nextToken()
-			node = makeNewAbstSyntaxNode(ND_LTQ, Expr_add(), node, nil)
+			e, err := Expr_add()
+			if err != nil {
+				return nil, err
+			}
+			node = makeNewAbstSyntaxNode(ND_LTQ, e, node, nil)
 			continue
 		}
 
@@ -130,46 +305,69 @@ func Expr_relational() (node *abstSyntaxNode) {
 		break
 	}
 
-	return node
+	return node, nil
 }
 
-func Expr_add() (node *abstSyntaxNode) {
+func Expr_add() (node *abstSyntaxNode, err error) {
 	// add = mul ("+" mul | "-" mul )*
-	node = Expr_mul()
+	node, err = Expr_mul()
+	if err != nil {
+		return nil, err
+	}
+
 	// + か - があるとき
 	for {
 		nToken := ts.nextPeekToken()
 		switch nToken.kind {
 		case TK_SYMBOL_ADD:
 			ts.nextToken()
-			node = makeNewAbstSyntaxNode(ND_ADD, node, Expr_mul(), nil)
+			e, err := Expr_mul()
+			if err != nil {
+				return nil, err
+			}
+			node = makeNewAbstSyntaxNode(ND_ADD, node, e, nil)
 			continue
 		case TK_SYMBOL_SUB:
 			ts.nextToken()
-			node = makeNewAbstSyntaxNode(ND_SUB, node, Expr_mul(), nil)
+			e, err := Expr_mul()
+			if err != nil {
+				return nil, err
+			}
+			node = makeNewAbstSyntaxNode(ND_SUB, node, e, nil)
 			continue
 		}
 
 		// + Token でも - Token でもないとき
 		break
 	}
-	return node
+	return node, nil
 }
 
-func Expr_mul() (node *abstSyntaxNode) {
+func Expr_mul() (node *abstSyntaxNode, err error) {
 	// mul     = unary ("*" unary | "/" unary)*
-	node = Expr_unary()
+	node, err = Expr_unary()
+	if err != nil {
+		return nil, err
+	}
 	// * か / があるとき
 	for {
 		nToken := ts.nextPeekToken()
 		switch nToken.kind {
 		case TK_SYMBOL_MUL:
 			ts.nextToken()
-			node = makeNewAbstSyntaxNode(ND_MUL, node, Expr_mul(), nil)
+			e, err := Expr_unary()
+			if err != nil {
+				return nil, err
+			}
+			node = makeNewAbstSyntaxNode(ND_MUL, node, e, nil)
 			continue
 		case TK_SYMBOL_DIV:
 			ts.nextToken()
-			node = makeNewAbstSyntaxNode(ND_DIV, node, Expr_mul(), nil)
+			e, err := Expr_unary()
+			if err != nil {
+				return nil, err
+			}
+			node = makeNewAbstSyntaxNode(ND_DIV, node, e, nil)
 			continue
 		}
 
@@ -177,38 +375,55 @@ func Expr_mul() (node *abstSyntaxNode) {
 		break
 	}
 
-	return node
+	return node, nil
 }
 
-func Expr_unary() (node *abstSyntaxNode) {
+func Expr_unary() (node *abstSyntaxNode, err error) {
 	// unary   = ("+" | "-")? primary
 	// +x -> x, -x -> 0-x
 	nToken := ts.nextPeekToken()
 	switch nToken.kind {
 	case TK_SYMBOL_ADD:
 		ts.nextToken() // + を読み飛ばす
-		node = Expr_primary()
-		return node
+		node, err = Expr_primary()
+		if err != nil {
+			return nil, err
+		}
+		return node, nil
 	case TK_SYMBOL_SUB:
 		ts.nextToken()
 		leftNode := makeNewAbstSyntaxNode(ND_NUM, nil, nil, 0)
-		node = makeNewAbstSyntaxNode(ND_SUB, leftNode, Expr_primary(), nil) // "0 -" x に対応
-		return node
+		e, err := Expr_unary()
+		if err != nil {
+			return nil, err
+		}
+		node = makeNewAbstSyntaxNode(ND_SUB, leftNode, e, nil) // "0 -" x に対応
+		return node, nil
 	}
 
 	// + も - もないとき
-	node = Expr_primary()
-	return node
+	node, err = Expr_primary()
+	if err != nil {
+		return nil, err
+	}
+
+	return node, nil
 }
 
-func Expr_primary() (node *abstSyntaxNode) {
+func Expr_primary() (node *abstSyntaxNode, err error) {
 	// primary = num | ident | "(" expr ")"
 	nToken := ts.nextPeekToken()
 	switch nToken.kind {
 	case TK_SYMBOL_LEFTPAT: // ( expr )
 		ts.nextToken() // (
-		node = Expr_expr()
-		ts.nextToken() // )
+		node, err = Expr_expr()
+		if err != nil {
+			return nil, err
+		}
+		err = ts.nextExpectReadToken(Token{kind: TK_SYMBOL_RIGHTPAT}) // )
+		if err != nil {
+			return nil, err
+		}
 	case TK_NUM:
 		node = makeNewAbstSyntaxNode(ND_NUM, nil, nil, ts.nextToken().value) // Token は 1つ進む
 	case TK_IDENT:
@@ -225,10 +440,10 @@ func Expr_primary() (node *abstSyntaxNode) {
 		ts.nextToken() // 変数トークンを消化する
 	}
 
-	return node
+	return node, nil
 }
 
-func ParserMain(tokens []Token) (topNodes []*abstSyntaxNode) {
+func ParserMain(tokens []Token) (topNodes []*abstSyntaxNode, err error) {
 	localVar = map[string]int{}
 	ts = newTokenStream(tokens)
 	for {
@@ -236,8 +451,11 @@ func ParserMain(tokens []Token) (topNodes []*abstSyntaxNode) {
 			break
 		}
 
-		topNode := Expr_stmt()
+		topNode, err := Expr_stmt()
+		if err != nil {
+			return nil, err
+		}
 		topNodes = append(topNodes, topNode)
 	}
-	return topNodes
+	return topNodes, nil
 }
