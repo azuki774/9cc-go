@@ -24,6 +24,7 @@ var (
 	ND_IFELSE    = 44 // elseありのIF
 	ND_WHILE     = 45
 	ND_FOR       = 46
+	ND_BLOCK     = 47 // { stmt* } : value に stmt* に含まれるabstSyntaxNode のスライス
 )
 
 type abstSyntaxNode struct {
@@ -38,8 +39,6 @@ var localVar map[string]int // varName -> offset
 func makeNewAbstSyntaxNode(nodeKind int, leftNode *abstSyntaxNode, rightNode *abstSyntaxNode, value interface{}) *abstSyntaxNode {
 	return &abstSyntaxNode{nodeKind: nodeKind, leftNode: leftNode, rightNode: rightNode, value: value}
 }
-
-
 
 func ParserMain(tokens []Token) (topNodes []*abstSyntaxNode, err error) {
 	localVar = map[string]int{}
