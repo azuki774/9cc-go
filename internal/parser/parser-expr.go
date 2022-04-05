@@ -137,7 +137,6 @@ func Expr_stmt() (node *abstSyntaxNode, err error) {
 		if err != nil {
 			return nil, err
 		}
-
 		eD, err := Expr_stmt()
 		if err != nil {
 			return nil, err
@@ -148,6 +147,24 @@ func Expr_stmt() (node *abstSyntaxNode, err error) {
 		eCD := makeNewAbstSyntaxNode(ND_UNDEFINED, eC, eD, nil)
 		node = makeNewAbstSyntaxNode(ND_FOR, eAB, eCD, nil)
 
+		return node, nil
+
+	case TK_BLOCKL:
+		ts.nextToken() // {
+		var blockNDList []*abstSyntaxNode
+		for { // stmt*
+			if ts.nextPeekToken().kind == TK_BLOCKR {
+				ts.nextToken() // }
+				break
+			}
+			newNode, err := Expr_stmt()
+			if err != nil {
+				return nil, err
+			}
+			blockNDList = append(blockNDList, newNode)
+		}
+
+		node = makeNewAbstSyntaxNode(ND_BLOCK, nil, nil, blockNDList)
 		return node, nil
 
 	default:

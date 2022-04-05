@@ -64,8 +64,8 @@ func TokenizeOnly(SourceFileName string) (err error) {
 		return fmt.Errorf("TokenizeOnly : %w", err)
 	}
 
-	for _, token := range tokens {
-		fmt.Printf("%s\n", token.ShowString())
+	for i, token := range tokens {
+		fmt.Printf("%d: %s\n", i, token.ShowString())
 	}
 
 	return nil
