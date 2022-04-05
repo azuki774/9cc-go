@@ -1,5 +1,20 @@
 package parser
 
+func Expr_program(ts *tokenStream) (nodes []*abstSyntaxNode, err error) {
+	for {
+		if !ts.ok() {
+			break
+		}
+
+		topNode, err := Expr_stmt()
+		if err != nil {
+			return nil, err
+		}
+		nodes = append(nodes, topNode)
+	}
+	return nodes, nil
+}
+
 func Expr_stmt() (node *abstSyntaxNode, err error) {
 	// stmt = expr ";" | "return" expr ";" | "if" "(" expr ")" stmt ("else" stmt)?
 	nToken := ts.nextPeekToken()

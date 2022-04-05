@@ -40,19 +40,12 @@ func makeNewAbstSyntaxNode(nodeKind int, leftNode *abstSyntaxNode, rightNode *ab
 	return &abstSyntaxNode{nodeKind: nodeKind, leftNode: leftNode, rightNode: rightNode, value: value}
 }
 
-func ParserMain(tokens []Token) (topNodes []*abstSyntaxNode, err error) {
+func ParserMain(tokens []Token) (nodes []*abstSyntaxNode, err error) {
 	localVar = map[string]int{}
 	ts = newTokenStream(tokens)
-	for {
-		if !ts.ok() {
-			break
-		}
-
-		topNode, err := Expr_stmt()
-		if err != nil {
-			return nil, err
-		}
-		topNodes = append(topNodes, topNode)
+	nodes, err = Expr_program(ts)
+	if err != nil {
+		return nil, err
 	}
-	return topNodes, nil
+	return nodes, nil
 }
