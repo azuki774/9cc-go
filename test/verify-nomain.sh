@@ -3,7 +3,7 @@ BINARY_PATH=`dirname ${0}`/../build/9cc-go
 INPUT=${1}
 ANSWER=${2}
 
-${BINARY_PATH} -o ./test/tmp.s ${INPUT} 
+${BINARY_PATH} -o ./test/tmp.s --no-main ${INPUT} 
 
 cc -o ./test/tmp ./test/tmp.s
 rm -rf ./test/tmp.s

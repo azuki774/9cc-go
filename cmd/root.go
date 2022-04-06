@@ -9,6 +9,7 @@ import (
 	"os"
 
 	"github.com/azuki774/9cc-go/internal/compiler"
+	"github.com/azuki774/9cc-go/internal/parser"
 	"github.com/spf13/cobra"
 )
 
@@ -40,9 +41,14 @@ to quickly create a Cobra application.`,
 
 		tf, _ := cmd.Flags().GetBool("tokenize")
 		stf, _ := cmd.Flags().GetBool("show-tokenize")
+		nmain, _ := cmd.Flags().GetBool("no-main")
 		if tf {
 			err = compiler.TokenizeOnly(SourceFileName)
 			return err
+		}
+
+		if nmain {
+			parser.NoMain = true
 		}
 
 		err = compiler.CompileMain(OutputFileName, SourceFileName, stf)
@@ -64,4 +70,5 @@ func init() {
 	rootCmd.Flags().StringP("output", "o", "output.s", "output file name")
 	rootCmd.Flags().BoolP("tokenize", "", false, "only tokenize")
 	rootCmd.Flags().BoolP("show-tokenize", "", false, "show tokenize")
+	rootCmd.Flags().BoolP("no-main", "n", false, "no main")
 }

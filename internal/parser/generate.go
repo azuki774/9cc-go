@@ -4,11 +4,14 @@ import "fmt"
 
 var generatingCode []string // 生成するアセンブリコード
 var jumpLabel = 0
+var NoMain bool = false // no-main = true なら ソースファイル全体をmain関数とする
 
 func genInitCode() {
 	generatingCode = append(generatingCode, ".intel_syntax noprefix\n")
 	generatingCode = append(generatingCode, ".globl main\n")
-	generatingCode = append(generatingCode, "main:\n")
+	if NoMain {
+		generatingCode = append(generatingCode, "main:\n")
+	}
 	generatingCode = append(generatingCode, "push rbp\n")
 	generatingCode = append(generatingCode, "mov rbp, rsp\n") // rbp のアドレス = rsp のアドレス
 	generatingCode = append(generatingCode, "sub rsp, 208\n") // ローカル変数用に容量確保 26 * 8
