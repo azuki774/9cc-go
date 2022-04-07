@@ -11,10 +11,9 @@ func genInitCode() {
 	generatingCode = append(generatingCode, ".globl main\n")
 	if NoMain {
 		generatingCode = append(generatingCode, "main:\n")
+		genCodeFuncHeader("main")
 	}
-	generatingCode = append(generatingCode, "push rbp\n")
-	generatingCode = append(generatingCode, "mov rbp, rsp\n") // rbp のアドレス = rsp のアドレス
-	generatingCode = append(generatingCode, "sub rsp, 208\n") // ローカル変数用に容量確保 26 * 8
+
 }
 
 func genEndCode() {
@@ -38,6 +37,17 @@ func genLocalVar(node *abstSyntaxNode) {
 	generatingCode = append(generatingCode, offsetCode)
 
 	generatingCode = append(generatingCode, "push rax\n")
+}
+
+func genCodeFuncHeader(funcName string) {
+	if funcName == "main" {
+		generatingCode = append(generatingCode, "push rbp\n")
+		generatingCode = append(generatingCode, "mov rbp, rsp\n") // rbp のアドレス = rsp のアドレス
+		generatingCode = append(generatingCode, "sub rsp, 208\n") // ローカル変数用に容量確保 26 * 8
+	} else {
+		generatingCode = append(generatingCode, "push rbp\n")
+		generatingCode = append(generatingCode, "mov rbp, rsp\n")
+	}
 }
 
 func genCode(node *abstSyntaxNode) {
@@ -135,6 +145,18 @@ func genCode(node *abstSyntaxNode) {
 			genCode(nowNode)
 		}
 		return
+	case ND_FUNDEF:
+		funcName := node.value.(string)
+		generatingCode = append(generatingCode, fmt.Sprintf("%s:\n", funcName))
+		genCodeFuncHeader(funcName)
+		genCode(node.rightNode)
+		return
+	case ND_FUNCALL:
+		// value に関数名、leftNode に引数のnode, rightNode に 関数のstmt
+		funcName := node.value.(string)
+		generatingCode = append(generatingCode, fmt.Sprintf("call %s\n", funcName))
+		generatingCode = append(generatingCode, fmt.Sprintf("push rax\n"))
+		return
 	}
 
 	genCode(node.leftNode)
@@ -180,7 +202,9 @@ func GenAssembleMain(nodes []*abstSyntaxNode) (codes []string, err error) {
 		genCode(node)
 
 		// 各式の計算結果をスタックからraxにpop
-		generatingCode = append(generatingCode, "pop rax\n")
+		if NoMain {
+			generatingCode = append(generatingCode, "pop rax\n")
+		}
 	}
 	genEndCode()
 	return generatingCode, nil

@@ -1,6 +1,35 @@
 package parser
 
+import "fmt"
+
 func Expr_program(ts *tokenStream) (nodes []*abstSyntaxNode, err error) {
+	for {
+		if !ts.ok() {
+			break
+		}
+
+		// ident "(" ")" stmt
+		if ts.nextPeekToken().kind == TK_IDENT {
+			funcName := ts.nextPeekToken().value.(string)
+			ts.nextToken() // ident
+			ts.nextToken() // (
+			ts.nextToken() // )
+			stmtNode, err := Expr_stmt()
+			if err != nil {
+				return nil, err
+			}
+			topNode := makeNewAbstSyntaxNode(ND_FUNDEF, nil, stmtNode, funcName)
+			nodes = append(nodes, topNode)
+		} else {
+			return nil, fmt.Errorf("Expr_program : not found definition of function")
+		}
+
+	}
+
+	return nodes, nil
+}
+
+func Expr_programNoMain(ts *tokenStream) (nodes []*abstSyntaxNode, err error) {
 	for {
 		if !ts.ok() {
 			break
@@ -421,16 +450,26 @@ func Expr_primary() (node *abstSyntaxNode, err error) {
 		node = makeNewAbstSyntaxNode(ND_NUM, nil, nil, ts.nextToken().value) // Token は 1つ進む
 	case TK_IDENT:
 		name := nToken.value.(string)
-		if offset, ok := localVar[name]; ok {
-			// 変数が定義済
-			node = makeNewAbstSyntaxNode(ND_LVAR, nil, nil, int(offset))
+		ts.nextToken() // 変数名 or 関数名トークンを消化する
+
+		if ts.nextPeekToken().kind != TK_SYMBOL_LEFTPAT {
+			// 変数のとき
+			if offset, ok := localVar[name]; ok {
+				// 変数が定義済
+				node = makeNewAbstSyntaxNode(ND_LVAR, nil, nil, int(offset))
+			} else {
+				// 変数が初出
+				offset = (len(localVar) + 1) * 8
+				localVar[name] = offset
+				node = makeNewAbstSyntaxNode(ND_LVAR, nil, nil, int(offset))
+			}
 		} else {
-			// 変数が初出
-			offset = (len(localVar) + 1) * 8
-			localVar[name] = offset
-			node = makeNewAbstSyntaxNode(ND_LVAR, nil, nil, int(offset))
+			// 関数のとき
+			ts.nextToken() // (
+			ts.nextToken() // )
+			node = makeNewAbstSyntaxNode(ND_FUNCALL, nil, nil, name)
 		}
-		ts.nextToken() // 変数トークンを消化する
+
 	}
 
 	return node, nil

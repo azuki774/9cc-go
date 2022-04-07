@@ -1,10 +1,8 @@
-sum(m, n) {
-  acc = 0;
-  for (i = m; i <= n; i = i + 1)
-    acc = acc + i;
-  return acc;
+fiveFunc() {
+  return 5;
 }
 
 main() {
-  return sum(1, 10);
+  a = fiveFunc();
+  return a + 1;
 }

@@ -3,6 +3,5 @@ fiveFunc() {
 }
 
 main() {
-  a = fiveFunc();
-  return a + 1;
+  return fiveFunc() + 10;
 }

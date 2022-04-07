@@ -25,8 +25,9 @@ var (
 	ND_WHILE       = 45
 	ND_FOR         = 46
 	ND_BLOCK       = 47 // { stmt* } : value に stmt* に含まれるabstSyntaxNode のスライス
-	ND_FUNCALL     = 48 // value に呼び出す関数名、rightNode に引数のnode
+	ND_FUNCALL     = 48 // value に呼び出す関数名、leftNode に引数のnode
 	ND_FUNCALL_ARG = 49 // value に引数たちの abstSyntaxNode のスライス
+	ND_FUNDEF      = 50 // value に関数名、leftNode に引数のnode, rightNode に 関数のstmt
 )
 
 type abstSyntaxNode struct {
@@ -45,9 +46,15 @@ func makeNewAbstSyntaxNode(nodeKind int, leftNode *abstSyntaxNode, rightNode *ab
 func ParserMain(tokens []Token) (nodes []*abstSyntaxNode, err error) {
 	localVar = map[string]int{}
 	ts = newTokenStream(tokens)
-	nodes, err = Expr_program(ts)
+	if !NoMain {
+		nodes, err = Expr_program(ts)
+	} else {
+		nodes, err = Expr_programNoMain(ts)
+	}
+
 	if err != nil {
 		return nil, err
 	}
+
 	return nodes, nil
 }
