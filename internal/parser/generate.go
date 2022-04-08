@@ -154,8 +154,23 @@ func genCode(node *abstSyntaxNode) {
 	case ND_FUNCALL:
 		// value に関数名、leftNode に引数のnode, rightNode に 関数のstmt
 		funcName := node.value.(string)
+
+		// rsp を 16の倍数にする調整
+		jumpLabel++
+
+		generatingCode = append(generatingCode, "mov rax, rsp\n")
+		generatingCode = append(generatingCode, "and rax, 15\n")                          // 下4bitのみにマスキング
+		generatingCode = append(generatingCode, fmt.Sprintf("jnz .Lcall%d\n", jumpLabel)) // 下4bit != 0
+		generatingCode = append(generatingCode, "mov rax, 0\n")
 		generatingCode = append(generatingCode, fmt.Sprintf("call %s\n", funcName))
-		generatingCode = append(generatingCode, fmt.Sprintf("push rax\n"))
+		generatingCode = append(generatingCode, fmt.Sprintf("jmp .Lend%d\n", jumpLabel))
+		generatingCode = append(generatingCode, fmt.Sprintf(".Lcall%d:\n", jumpLabel)) // 16の倍数になっていなくて、8ずらすときはここから
+		generatingCode = append(generatingCode, "sub rsp, 8\n")
+		generatingCode = append(generatingCode, "mov rax, 0\n")
+		generatingCode = append(generatingCode, fmt.Sprintf("call %s\n", funcName))
+		generatingCode = append(generatingCode, "add rsp, 8\n")
+		generatingCode = append(generatingCode, fmt.Sprintf(".Lend%d:\n", jumpLabel))
+		generatingCode = append(generatingCode, "push rax\n")
 		return
 	}
 
