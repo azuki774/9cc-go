@@ -11,7 +11,7 @@ func genInitCode() {
 	generatingCode = append(generatingCode, ".globl main\n")
 	if NoMain {
 		generatingCode = append(generatingCode, "main:\n")
-		genCodeFuncHeader("main")
+		genCodePrologue("main")
 	}
 
 }
@@ -39,15 +39,10 @@ func genLocalVar(node *abstSyntaxNode) {
 	generatingCode = append(generatingCode, "push rax\n")
 }
 
-func genCodeFuncHeader(funcName string) {
-	if funcName == "main" {
-		generatingCode = append(generatingCode, "push rbp\n")
-		generatingCode = append(generatingCode, "mov rbp, rsp\n") // rbp のアドレス = rsp のアドレス
-		generatingCode = append(generatingCode, "sub rsp, 208\n") // ローカル変数用に容量確保 26 * 8
-	} else {
-		generatingCode = append(generatingCode, "push rbp\n")
-		generatingCode = append(generatingCode, "mov rbp, rsp\n")
-	}
+func genCodePrologue(funcName string) {
+	generatingCode = append(generatingCode, "push rbp\n")
+	generatingCode = append(generatingCode, "mov rbp, rsp\n") // rbp のアドレス = rsp のアドレス
+	generatingCode = append(generatingCode, "sub rsp, 256\n") // ローカル変数用に容量確保 32 * 8
 }
 
 func genCode(node *abstSyntaxNode) {
@@ -148,7 +143,7 @@ func genCode(node *abstSyntaxNode) {
 	case ND_FUNDEF:
 		funcName := node.value.(string)
 		generatingCode = append(generatingCode, fmt.Sprintf("%s:\n", funcName))
-		genCodeFuncHeader(funcName)
+		genCodePrologue(funcName)
 		genCode(node.rightNode)
 		return
 	case ND_FUNCALL:

@@ -2,7 +2,10 @@ package parser
 
 import "fmt"
 
+var localVar map[string]int // varName -> offset
+
 func Expr_program(ts *tokenStream) (nodes []*abstSyntaxNode, err error) {
+
 	for {
 		if !ts.ok() {
 			break
@@ -10,6 +13,7 @@ func Expr_program(ts *tokenStream) (nodes []*abstSyntaxNode, err error) {
 
 		// ident "(" ")" stmt
 		if ts.nextPeekToken().kind == TK_IDENT {
+			localVar = make(map[string]int) // 各変数のパース前にローカル変数テーブルを初期化
 			funcName := ts.nextPeekToken().value.(string)
 			ts.nextToken() // ident
 			ts.nextToken() // (

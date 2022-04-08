@@ -23,3 +23,4 @@ Flags:
 
 ## Reference
 - 低レイヤを知りたい人のためのCコンパイラ作成入門 : https://www.sigbus.info/compilerbook
+- x86アセンブリ言語での関数コール : https://vanya.jp.net/os/x86call/

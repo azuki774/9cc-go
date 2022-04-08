@@ -37,8 +37,6 @@ type abstSyntaxNode struct {
 	value     interface{} // num の値や、local variable の offset を入れる
 }
 
-var localVar map[string]int // varName -> offset
-
 func makeNewAbstSyntaxNode(nodeKind int, leftNode *abstSyntaxNode, rightNode *abstSyntaxNode, value interface{}) *abstSyntaxNode {
 	return &abstSyntaxNode{nodeKind: nodeKind, leftNode: leftNode, rightNode: rightNode, value: value}
 }
