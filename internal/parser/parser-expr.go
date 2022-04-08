@@ -17,12 +17,30 @@ func Expr_program(ts *tokenStream) (nodes []*abstSyntaxNode, err error) {
 			funcName := ts.nextPeekToken().value.(string)
 			ts.nextToken() // ident
 			ts.nextToken() // (
+
+			argsNode := makeNewAbstSyntaxNode(ND_FUNDEF_ARGS, nil, nil, nil)
+			// TODO: ここにargsが来る（仮引数）
+			for {
+				if ts.nextPeekToken().kind == TK_COMMA {
+					ts.nextToken() // ,
+				}
+				if ts.nextPeekToken().kind == TK_SYMBOL_RIGHTPAT {
+					break
+				}
+				varNode, err := Expr_primary() // 変数定義node
+				if err != nil {
+					return nil, err
+				}
+				// TODO: とりあえず1変数
+				argsNode.value = varNode
+			}
+
 			ts.nextToken() // )
 			stmtNode, err := Expr_stmt()
 			if err != nil {
 				return nil, err
 			}
-			topNode := makeNewAbstSyntaxNode(ND_FUNDEF, nil, stmtNode, funcName)
+			topNode := makeNewAbstSyntaxNode(ND_FUNDEF, argsNode, stmtNode, funcName)
 			nodes = append(nodes, topNode)
 		} else {
 			return nil, fmt.Errorf("Expr_program : not found definition of function")
@@ -470,8 +488,19 @@ func Expr_primary() (node *abstSyntaxNode, err error) {
 		} else {
 			// 関数のとき
 			ts.nextToken() // (
+			// TODO: ここに引数が来る　評価してから入れる必要がある
+			varNode := makeNewAbstSyntaxNode(ND_FUNCALL_ARGS, nil, nil, nil)
+			if ts.nextPeekToken().kind != TK_SYMBOL_RIGHTPAT { // 引数ありのとき
+				// TODO: 今は1つのみ対応
+				avarNode, err := Expr_add()
+				if err != nil {
+					return nil, err
+				}
+				varNode = makeNewAbstSyntaxNode(ND_FUNCALL_ARGS, nil, nil, []*abstSyntaxNode{avarNode})
+			}
+
 			ts.nextToken() // )
-			node = makeNewAbstSyntaxNode(ND_FUNCALL, nil, nil, name)
+			node = makeNewAbstSyntaxNode(ND_FUNCALL, varNode, nil, name)
 		}
 
 	}

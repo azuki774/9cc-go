@@ -58,4 +58,7 @@ ${NOWDIR}/verify-nomain.sh ${NOWDIR}/src/2-7-3.c 2 || exit 1
 ${NOWDIR}/verify.sh ${NOWDIR}/src/3-0-0.c 15 || exit 1
 ${NOWDIR}/verify.sh ${NOWDIR}/src/3-0-1.c 6 || exit 1
 ${NOWDIR}/verify.sh ${NOWDIR}/src/3-0-2.c 55 || exit 1
+${NOWDIR}/verify.sh ${NOWDIR}/src/3-1-0.c 5 || exit 1
+${NOWDIR}/verify.sh ${NOWDIR}/src/3-1-1.c 6 || exit 1
+${NOWDIR}/verify.sh ${NOWDIR}/src/3-1-2.c 55 || exit 1
 echo "All test passed"
