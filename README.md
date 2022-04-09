@@ -6,6 +6,7 @@
 - 複数文字変数の参照と代入
 - for, if, while 文の実装
 - block の実装 { }
+- 6引数までの関数実装、呼び出し、RSP 16の倍数対応(ABI)
 
 ## Usage
 ``` consolev
@@ -23,3 +24,4 @@ Flags:
 
 ## Reference
 - 低レイヤを知りたい人のためのCコンパイラ作成入門 : https://www.sigbus.info/compilerbook
+- x86アセンブリ言語での関数コール : https://vanya.jp.net/os/x86call/

@@ -4,14 +4,17 @@ import "fmt"
 
 var generatingCode []string // 生成するアセンブリコード
 var jumpLabel = 0
+var NoMain bool = false // no-main = true なら ソースファイル全体をmain関数とする
+var argsRegisterName = []string{"rdi", "rsi", "rdx", "rcx", "r8", "r9"}
 
 func genInitCode() {
 	generatingCode = append(generatingCode, ".intel_syntax noprefix\n")
 	generatingCode = append(generatingCode, ".globl main\n")
-	generatingCode = append(generatingCode, "main:\n")
-	generatingCode = append(generatingCode, "push rbp\n")
-	generatingCode = append(generatingCode, "mov rbp, rsp\n") // rbp のアドレス = rsp のアドレス
-	generatingCode = append(generatingCode, "sub rsp, 208\n") // ローカル変数用に容量確保 26 * 8
+	if NoMain {
+		generatingCode = append(generatingCode, "main:\n")
+		genCodePrologue("main", 0)
+	}
+
 }
 
 func genEndCode() {
@@ -35,6 +38,36 @@ func genLocalVar(node *abstSyntaxNode) {
 	generatingCode = append(generatingCode, offsetCode)
 
 	generatingCode = append(generatingCode, "push rax\n")
+}
+
+func genCodePrologue(funcName string, argsNum int) {
+	generatingCode = append(generatingCode, "push rbp\n")
+	generatingCode = append(generatingCode, "mov rbp, rsp\n") // rbp のアドレス = rsp のアドレス
+	generatingCode = append(generatingCode, "sub rsp, 256\n") // ローカル変数用に容量確保 32 * 8
+	if funcName == "main" {
+		return
+	}
+	// スタックの中は rbp | args1 | args2 | ... | args8 | localVar1 | localVar2 | ... | locanVarN | <- rsp
+	// 引数を仮引数に割りあて
+	// if argsNum == 1 {
+	// 	generatingCode = append(generatingCode, "mov rsp, rbp\n")   // rsp のアドレス = rbp のアドレス
+	// 	generatingCode = append(generatingCode, "sub rsp, 8\n")     // 1つ目の変数のアドレス
+	// 	generatingCode = append(generatingCode, "mov [rsp], rdi\n") // 1つ目の変数のアドレス
+
+	// 	generatingCode = append(generatingCode, "mov rsp, rbp\n")
+	// 	generatingCode = append(generatingCode, "sub rsp, 256\n") // ローカル変数用に容量確保 32 * 8
+	// }
+
+	if argsNum > 0 {
+		generatingCode = append(generatingCode, "mov rsp, rbp\n") // 一旦変数領域のスタックのベースに移動
+		for i := 0; i < argsNum; i++ {
+			// 受け取った引数に変数を書き換えていく
+			generatingCode = append(generatingCode, "sub rsp, 8\n")                                      // i個目の引数のアドレスに移動
+			generatingCode = append(generatingCode, fmt.Sprintf("mov [rsp], %s\n", argsRegisterName[i])) // i個目の引数を書き換え
+		}
+		generatingCode = append(generatingCode, "mov rsp, rbp\n")
+		generatingCode = append(generatingCode, "sub rsp, 256\n") // 元の位置に復帰
+	}
 }
 
 func genCode(node *abstSyntaxNode) {
@@ -132,6 +165,53 @@ func genCode(node *abstSyntaxNode) {
 			genCode(nowNode)
 		}
 		return
+	case ND_FUNDEF:
+		funcName := node.value.(string)
+		generatingCode = append(generatingCode, fmt.Sprintf("%s:\n", funcName))
+
+		// この変数が何変数関数か調べる
+		var argsNum int = 0
+		argsNode := node.leftNode
+		if argsNode.value != nil {
+			argsNum = len(argsNode.value.([]*abstSyntaxNode))
+		}
+
+		genCodePrologue(funcName, argsNum)
+		genCode(node.rightNode)
+		return
+	case ND_FUNDEF_ARGS:
+		argsNodes := node.value.([]*abstSyntaxNode)
+		for _, v := range argsNodes {
+			genCode(v) // 変数を定義する
+		}
+		return
+	case ND_FUNCALL:
+		// value に関数名、leftNode に引数のnode, rightNode に 関数のstmt
+		funcName := node.value.(string)
+
+		// ND_FUNCALL_ARGS
+		argsNode := node.leftNode.value.([]*abstSyntaxNode)
+		for i, v := range argsNode {
+			genCode(v)
+			generatingCode = append(generatingCode, fmt.Sprintf("pop %s\n", argsRegisterName[i]))
+		}
+		// rsp を 16の倍数にする調整
+		jumpLabel++
+
+		generatingCode = append(generatingCode, "mov rax, rsp\n")
+		generatingCode = append(generatingCode, "and rax, 15\n")                          // 下4bitのみにマスキング
+		generatingCode = append(generatingCode, fmt.Sprintf("jnz .Lcall%d\n", jumpLabel)) // 下4bit != 0
+		generatingCode = append(generatingCode, "mov rax, 0\n")                           // TODO: rax は引数の数
+		generatingCode = append(generatingCode, fmt.Sprintf("call %s\n", funcName))
+		generatingCode = append(generatingCode, fmt.Sprintf("jmp .Lend%d\n", jumpLabel))
+		generatingCode = append(generatingCode, fmt.Sprintf(".Lcall%d:\n", jumpLabel)) // 16の倍数になっていなくて、8ずらすときはここから
+		generatingCode = append(generatingCode, "sub rsp, 8\n")
+		generatingCode = append(generatingCode, "mov rax, 0\n") // TODO: rax は引数の数
+		generatingCode = append(generatingCode, fmt.Sprintf("call %s\n", funcName))
+		generatingCode = append(generatingCode, "add rsp, 8\n")
+		generatingCode = append(generatingCode, fmt.Sprintf(".Lend%d:\n", jumpLabel))
+		generatingCode = append(generatingCode, "push rax\n")
+		return
 	}
 
 	genCode(node.leftNode)
@@ -177,7 +257,9 @@ func GenAssembleMain(nodes []*abstSyntaxNode) (codes []string, err error) {
 		genCode(node)
 
 		// 各式の計算結果をスタックからraxにpop
-		generatingCode = append(generatingCode, "pop rax\n")
+		if NoMain {
+			generatingCode = append(generatingCode, "pop rax\n")
+		}
 	}
 	genEndCode()
 	return generatingCode, nil

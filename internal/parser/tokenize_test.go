@@ -86,6 +86,7 @@ func Test_getNextToken(t *testing.T) {
 	ss23 := newStringStream(";;")
 	ss24 := newStringStream("{xxxxx")
 	ss25 := newStringStream("}yyyyy")
+	ss26 := newStringStream(",abcd")
 	type args struct {
 		ss *stringStream
 	}
@@ -243,6 +244,12 @@ func Test_getNextToken(t *testing.T) {
 			name:      "}",
 			args:      args{ss: ss25},
 			wantToken: Token{kind: TK_BLOCKR},
+			wantErr:   false,
+		},
+		{
+			name:      ",",
+			args:      args{ss: ss26},
+			wantToken: Token{kind: TK_COMMA},
 			wantErr:   false,
 		},
 	}
