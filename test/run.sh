@@ -5,6 +5,7 @@ BINARY_PATH=`dirname ${0}`/../build/9cc-go
 echo "Use ${BINARY_PATH}"
 
 # ${NOWDIR}/verify.sh <input c file> <answer> || exit <error code>
+echo "-- No main function --"
 ${NOWDIR}/verify-nomain.sh ${NOWDIR}/src/0-0.c 123 || exit 1
 ${NOWDIR}/verify-nomain.sh ${NOWDIR}/src/0-1.c 10 || exit 1
 ${NOWDIR}/verify-nomain.sh ${NOWDIR}/src/0-2.c 10 || exit 1
@@ -55,13 +56,16 @@ ${NOWDIR}/verify-nomain.sh ${NOWDIR}/src/2-7-0.c 1 || exit 1
 ${NOWDIR}/verify-nomain.sh ${NOWDIR}/src/2-7-1.c 2 || exit 1
 ${NOWDIR}/verify-nomain.sh ${NOWDIR}/src/2-7-2.c 97 || exit 1
 ${NOWDIR}/verify-nomain.sh ${NOWDIR}/src/2-7-3.c 2 || exit 1
-${NOWDIR}/verify.sh ${NOWDIR}/src/3-0-0.c 15 || exit 1
-${NOWDIR}/verify.sh ${NOWDIR}/src/3-0-1.c 6 || exit 1
-${NOWDIR}/verify.sh ${NOWDIR}/src/3-0-2.c 55 || exit 1
-${NOWDIR}/verify.sh ${NOWDIR}/src/3-1-0.c 5 || exit 1
-${NOWDIR}/verify.sh ${NOWDIR}/src/3-1-1.c 6 || exit 1
-${NOWDIR}/verify.sh ${NOWDIR}/src/3-1-2.c 55 || exit 1
-${NOWDIR}/verify.sh ${NOWDIR}/src/3-1-3.c 100 || exit 1
-${NOWDIR}/verify.sh ${NOWDIR}/src/3-1-4.c 13 || exit 1
-${NOWDIR}/verify.sh ${NOWDIR}/src/3-1-5.c 55 || exit 1
+echo "-- No link printf --"
+${NOWDIR}/verify-nolink.sh ${NOWDIR}/src/3-0-0.c 15 || exit 1
+${NOWDIR}/verify-nolink.sh ${NOWDIR}/src/3-0-1.c 6 || exit 1
+${NOWDIR}/verify-nolink.sh ${NOWDIR}/src/3-0-2.c 55 || exit 1
+${NOWDIR}/verify-nolink.sh ${NOWDIR}/src/3-1-0.c 5 || exit 1
+${NOWDIR}/verify-nolink.sh ${NOWDIR}/src/3-1-1.c 6 || exit 1
+${NOWDIR}/verify-nolink.sh ${NOWDIR}/src/3-1-2.c 55 || exit 1
+${NOWDIR}/verify-nolink.sh ${NOWDIR}/src/3-1-3.c 100 || exit 1
+${NOWDIR}/verify-nolink.sh ${NOWDIR}/src/3-1-4.c 13 || exit 1
+${NOWDIR}/verify-nolink.sh ${NOWDIR}/src/3-1-5.c 55 || exit 1
+echo "-- link printf --"
+${NOWDIR}/verify.sh ${NOWDIR}/src/3-2-0.c 5 || exit 1
 echo "All test passed"
