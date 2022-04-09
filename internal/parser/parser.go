@@ -17,6 +17,8 @@ var (
 	ND_LT           = 23 // <
 	ND_LTQ          = 24 // <=
 	ND_EQ           = 25 // =
+	ND_ADDR         = 26 // &hoge
+	ND_DEREF        = 27 // *hoge
 	ND_LVAR         = 31 // local variable
 	ND_RETURN       = 41
 	ND_IF           = 42

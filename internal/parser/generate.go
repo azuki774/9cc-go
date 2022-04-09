@@ -95,6 +95,15 @@ func genCode(node *abstSyntaxNode) {
 		generatingCode = append(generatingCode, "mov [rax], rdi\n") // 変数の値を直接右辺に書き換える
 		generatingCode = append(generatingCode, "push rdi\n")
 		return
+	case ND_ADDR: // &x
+		genLocalVar(node.leftNode) // スタックに左辺の変数のアドレスを入れるコード
+		return
+	case ND_DEREF: // *x
+		genCode(node.leftNode) // スタックに左辺の変数のアドレスを入れるコード
+		generatingCode = append(generatingCode, "pop rax\n")
+		generatingCode = append(generatingCode, "mov rax, [rax]\n")
+		generatingCode = append(generatingCode, "push rax\n")
+		return
 	case ND_RETURN:
 		genCode(node.leftNode) // return する値を評価するコード
 		generatingCode = append(generatingCode, "pop rax\n")

@@ -13,10 +13,11 @@ var (
 	TK_SYMBOL_SUB      = 12
 	TK_SYMBOL_MUL      = 13
 	TK_SYMBOL_DIV      = 14
-	TK_SYMBOL_LEFTPAT  = 15
-	TK_SYMBOL_RIGHTPAT = 16
-	TK_BLOCKL          = 17
-	TK_BLOCKR          = 18
+	TK_SYMBOL_AND      = 15
+	TK_SYMBOL_LEFTPAT  = 16
+	TK_SYMBOL_RIGHTPAT = 17
+	TK_BLOCKL          = 18
+	TK_BLOCKR          = 19
 	TK_COMP            = 21 // ==
 	TK_NOTEQ           = 22 // !=
 	TK_LT              = 23 // <
@@ -40,7 +41,7 @@ var (
 
 var (
 	// parser用
-	TK_SYMBOL_LIST = []byte{BYTE_SYMBOL_ADD, BYTE_SYMBOL_SUB, BYTE_SYMBOL_MUL, BYTE_SYMBOL_DIV, BYTE_LEFTPAT, BYTE_RIGHTPAT, BYTE_EQUAL, BYTE_EXC, BYTE_LT, BYTE_GT, BYTE_SEMICOLON, BYTE_BLOCKL, BYTE_BLOCKR, BYTE_COMMA}
+	TK_SYMBOL_LIST = []byte{BYTE_SYMBOL_ADD, BYTE_SYMBOL_SUB, BYTE_SYMBOL_MUL, BYTE_SYMBOL_DIV, BYTE_LEFTPAT, BYTE_RIGHTPAT, BYTE_EQUAL, BYTE_EXC, BYTE_LT, BYTE_GT, BYTE_SEMICOLON, BYTE_BLOCKL, BYTE_BLOCKR, BYTE_COMMA, BYTE_AND}
 	TK_SPACE       = []byte{BYTE_SPACE}                             // スペース
 	TK_DIGIT       = []byte{48, 49, 50, 51, 52, 53, 54, 55, 56, 57} // 0 - 9
 )
@@ -52,6 +53,7 @@ var (
 	BYTE_SYMBOL_DIV = byte(47)
 	BYTE_LEFTPAT    = byte(40)
 	BYTE_RIGHTPAT   = byte(41)
+	BYTE_AND        = byte(38)
 	BYTE_SPACE      = byte(32)
 	BYTE_EQUAL      = byte(61)
 	BYTE_EXC        = byte(33)
@@ -195,6 +197,8 @@ func getNextToken(ss *stringStream) (token Token, err error) {
 				token = Token{kind: TK_BLOCKR}
 			case BYTE_COMMA:
 				token = Token{kind: TK_COMMA}
+			case BYTE_AND:
+				token = Token{kind: TK_SYMBOL_AND}
 			}
 
 			break

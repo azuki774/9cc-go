@@ -423,6 +423,8 @@ func Expr_mul() (node *abstSyntaxNode, err error) {
 
 func Expr_unary() (node *abstSyntaxNode, err error) {
 	// unary   = ("+" | "-")? primary
+	// "*" unary
+	// "&" unary
 	// +x -> x, -x -> 0-x
 	nToken := ts.nextPeekToken()
 	switch nToken.kind {
@@ -436,11 +438,27 @@ func Expr_unary() (node *abstSyntaxNode, err error) {
 	case TK_SYMBOL_SUB:
 		ts.nextToken()
 		leftNode := makeNewAbstSyntaxNode(ND_NUM, nil, nil, 0)
-		e, err := Expr_unary()
+		e, err := Expr_primary()
 		if err != nil {
 			return nil, err
 		}
 		node = makeNewAbstSyntaxNode(ND_SUB, leftNode, e, nil) // "0 -" x に対応
+		return node, nil
+	case TK_SYMBOL_MUL: // DEREF
+		ts.nextToken()
+		e, err := Expr_unary()
+		if err != nil {
+			return nil, err
+		}
+		node = makeNewAbstSyntaxNode(ND_DEREF, e, nil, nil) // *e
+		return node, nil
+	case TK_SYMBOL_AND: // ADDR
+		ts.nextToken()
+		e, err := Expr_unary()
+		if err != nil {
+			return nil, err
+		}
+		node = makeNewAbstSyntaxNode(ND_ADDR, e, nil, nil) // &e
 		return node, nil
 	}
 
