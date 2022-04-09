@@ -42,7 +42,7 @@ var (
 	// parser用
 	TK_SYMBOL_LIST = []byte{BYTE_SYMBOL_ADD, BYTE_SYMBOL_SUB, BYTE_SYMBOL_MUL, BYTE_SYMBOL_DIV, BYTE_LEFTPAT, BYTE_RIGHTPAT, BYTE_EQUAL, BYTE_EXC, BYTE_LT, BYTE_GT, BYTE_SEMICOLON, BYTE_BLOCKL, BYTE_BLOCKR, BYTE_COMMA}
 	TK_SPACE       = []byte{BYTE_SPACE}                             // スペース
-	TK_DIGIT       = []byte{47, 48, 49, 50, 51, 52, 53, 54, 55, 56} // 0 - 9
+	TK_DIGIT       = []byte{48, 49, 50, 51, 52, 53, 54, 55, 56, 57} // 0 - 9
 )
 
 var (
