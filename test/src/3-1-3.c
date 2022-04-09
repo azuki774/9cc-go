@@ -1,8 +1,9 @@
-f(n){
+int f(int n){
   return n * n;
 }
 
-main(){
+int main(){
+  int a;
   a = 5;
   return f(5 + a);
 }

@@ -47,16 +47,6 @@ func genCodePrologue(funcName string, argsNum int) {
 	if funcName == "main" {
 		return
 	}
-	// スタックの中は rbp | args1 | args2 | ... | args8 | localVar1 | localVar2 | ... | locanVarN | <- rsp
-	// 引数を仮引数に割りあて
-	// if argsNum == 1 {
-	// 	generatingCode = append(generatingCode, "mov rsp, rbp\n")   // rsp のアドレス = rbp のアドレス
-	// 	generatingCode = append(generatingCode, "sub rsp, 8\n")     // 1つ目の変数のアドレス
-	// 	generatingCode = append(generatingCode, "mov [rsp], rdi\n") // 1つ目の変数のアドレス
-
-	// 	generatingCode = append(generatingCode, "mov rsp, rbp\n")
-	// 	generatingCode = append(generatingCode, "sub rsp, 256\n") // ローカル変数用に容量確保 32 * 8
-	// }
 
 	if argsNum > 0 {
 		generatingCode = append(generatingCode, "mov rsp, rbp\n") // 一旦変数領域のスタックのベースに移動

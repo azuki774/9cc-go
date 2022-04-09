@@ -33,6 +33,8 @@ var (
 	ND_FUNDEF_ARGS  = 51 // value に args の node のスライスを詰める
 )
 
+var typeStruct = []string{"int"}
+
 type abstSyntaxNode struct {
 	nodeKind  int
 	leftNode  *abstSyntaxNode

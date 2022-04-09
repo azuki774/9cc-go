@@ -1,7 +1,7 @@
-fiveFunc() {
+int fiveFunc() {
   return 5;
 }
 
-main() {
+int main() {
   return fiveFunc() + 10;
 }
