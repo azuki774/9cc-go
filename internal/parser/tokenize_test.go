@@ -87,6 +87,7 @@ func Test_getNextToken(t *testing.T) {
 	ss24 := newStringStream("{xxxxx")
 	ss25 := newStringStream("}yyyyy")
 	ss26 := newStringStream(",abcd")
+	ss27 := newStringStream("&abcd")
 	type args struct {
 		ss *stringStream
 	}
@@ -250,6 +251,12 @@ func Test_getNextToken(t *testing.T) {
 			name:      ",",
 			args:      args{ss: ss26},
 			wantToken: Token{kind: TK_COMMA},
+			wantErr:   false,
+		},
+		{
+			name:      "&",
+			args:      args{ss: ss27},
+			wantToken: Token{kind: TK_SYMBOL_AND},
 			wantErr:   false,
 		},
 	}

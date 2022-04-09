@@ -1,8 +1,9 @@
-Addone(n) {
+int Addone(int n) {
+  int m;
   m = 1;
   return m + n;
 }
 
-main() {
+int main() {
   return Addone(5);
 }

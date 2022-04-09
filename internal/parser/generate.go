@@ -47,16 +47,6 @@ func genCodePrologue(funcName string, argsNum int) {
 	if funcName == "main" {
 		return
 	}
-	// スタックの中は rbp | args1 | args2 | ... | args8 | localVar1 | localVar2 | ... | locanVarN | <- rsp
-	// 引数を仮引数に割りあて
-	// if argsNum == 1 {
-	// 	generatingCode = append(generatingCode, "mov rsp, rbp\n")   // rsp のアドレス = rbp のアドレス
-	// 	generatingCode = append(generatingCode, "sub rsp, 8\n")     // 1つ目の変数のアドレス
-	// 	generatingCode = append(generatingCode, "mov [rsp], rdi\n") // 1つ目の変数のアドレス
-
-	// 	generatingCode = append(generatingCode, "mov rsp, rbp\n")
-	// 	generatingCode = append(generatingCode, "sub rsp, 256\n") // ローカル変数用に容量確保 32 * 8
-	// }
 
 	if argsNum > 0 {
 		generatingCode = append(generatingCode, "mov rsp, rbp\n") // 一旦変数領域のスタックのベースに移動
@@ -94,6 +84,15 @@ func genCode(node *abstSyntaxNode) {
 		generatingCode = append(generatingCode, "pop rax\n")
 		generatingCode = append(generatingCode, "mov [rax], rdi\n") // 変数の値を直接右辺に書き換える
 		generatingCode = append(generatingCode, "push rdi\n")
+		return
+	case ND_ADDR: // &x
+		genLocalVar(node.leftNode) // スタックに左辺の変数のアドレスを入れるコード
+		return
+	case ND_DEREF: // *x
+		genCode(node.leftNode) // スタックに左辺の変数のアドレスを入れるコード
+		generatingCode = append(generatingCode, "pop rax\n")
+		generatingCode = append(generatingCode, "mov rax, [rax]\n")
+		generatingCode = append(generatingCode, "push rax\n")
 		return
 	case ND_RETURN:
 		genCode(node.leftNode) // return する値を評価するコード

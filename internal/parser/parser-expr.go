@@ -14,6 +14,13 @@ func Expr_program(ts *tokenStream) (nodes []*abstSyntaxNode, err error) {
 		// ident "(" ")" stmt
 		if ts.nextPeekToken().kind == TK_IDENT {
 			localVar = make(map[string]int) // 各変数のパース前にローカル変数テーブルを初期化
+
+			ts.nextToken() // int
+
+			if ts.nextPeekToken().kind != TK_IDENT {
+				return nil, fmt.Errorf("Expr_program : not found the function name")
+			}
+
 			funcName := ts.nextPeekToken().value.(string)
 			ts.nextToken() // ident
 			ts.nextToken() // (
@@ -423,6 +430,8 @@ func Expr_mul() (node *abstSyntaxNode, err error) {
 
 func Expr_unary() (node *abstSyntaxNode, err error) {
 	// unary   = ("+" | "-")? primary
+	// "*" unary
+	// "&" unary
 	// +x -> x, -x -> 0-x
 	nToken := ts.nextPeekToken()
 	switch nToken.kind {
@@ -436,11 +445,27 @@ func Expr_unary() (node *abstSyntaxNode, err error) {
 	case TK_SYMBOL_SUB:
 		ts.nextToken()
 		leftNode := makeNewAbstSyntaxNode(ND_NUM, nil, nil, 0)
-		e, err := Expr_unary()
+		e, err := Expr_primary()
 		if err != nil {
 			return nil, err
 		}
 		node = makeNewAbstSyntaxNode(ND_SUB, leftNode, e, nil) // "0 -" x に対応
+		return node, nil
+	case TK_SYMBOL_MUL: // DEREF
+		ts.nextToken()
+		e, err := Expr_unary()
+		if err != nil {
+			return nil, err
+		}
+		node = makeNewAbstSyntaxNode(ND_DEREF, e, nil, nil) // *e
+		return node, nil
+	case TK_SYMBOL_AND: // ADDR
+		ts.nextToken()
+		e, err := Expr_unary()
+		if err != nil {
+			return nil, err
+		}
+		node = makeNewAbstSyntaxNode(ND_ADDR, e, nil, nil) // &e
 		return node, nil
 	}
 
@@ -471,7 +496,29 @@ func Expr_primary() (node *abstSyntaxNode, err error) {
 		node = makeNewAbstSyntaxNode(ND_NUM, nil, nil, ts.nextToken().value) // Token は 1つ進む
 	case TK_IDENT:
 		name := nToken.value.(string)
-		ts.nextToken() // 変数名 or 関数名トークンを消化する
+		ts.nextToken() // 変数名 or 関数名トークン or 型名を消化する
+
+		if name == "int" {
+			if ts.nextPeekToken().kind != TK_IDENT {
+				return nil, fmt.Errorf("Expr_primary: variable name error")
+			}
+
+			name := ts.nextPeekToken().value.(string)
+
+			ts.nextToken() // 変数名
+
+			if _, ok := localVar[name]; ok {
+				// 変数が定義済
+				return nil, fmt.Errorf("%s is already defined", name)
+			} else {
+				// 変数が未定義
+				offset := (len(localVar) + 1) * 8
+				localVar[name] = offset
+				node = makeNewAbstSyntaxNode(ND_LVAR, nil, nil, int(offset))
+			}
+
+			return node, nil
+		}
 
 		if ts.nextPeekToken().kind != TK_SYMBOL_LEFTPAT {
 			// 変数のとき
@@ -479,10 +526,8 @@ func Expr_primary() (node *abstSyntaxNode, err error) {
 				// 変数が定義済
 				node = makeNewAbstSyntaxNode(ND_LVAR, nil, nil, int(offset))
 			} else {
-				// 変数が初出
-				offset = (len(localVar) + 1) * 8
-				localVar[name] = offset
-				node = makeNewAbstSyntaxNode(ND_LVAR, nil, nil, int(offset))
+				// 変数が未定義
+				return nil, fmt.Errorf("%s is not defined yet", name)
 			}
 		} else {
 			// 関数のとき

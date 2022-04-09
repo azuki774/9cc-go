@@ -68,4 +68,5 @@ ${NOWDIR}/verify-nolink.sh ${NOWDIR}/src/3-1-4.c 13 || exit 1
 ${NOWDIR}/verify-nolink.sh ${NOWDIR}/src/3-1-5.c 55 || exit 1
 echo "-- link printf --"
 ${NOWDIR}/verify.sh ${NOWDIR}/src/3-2-0.c 5 || exit 1
+${NOWDIR}/verify.sh ${NOWDIR}/src/3-2-1.c 3 || exit 1
 echo "All test passed"

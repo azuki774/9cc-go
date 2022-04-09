@@ -13,6 +13,7 @@ cc -o ./test/tmp ./test/src/show.o ./test/tmp.o
 rm -rf ./test/src/show.o
 
 ACTUAL=`./test/tmp`
+rm -rf ./test/tmp.o
 rm -rf ./test/tmp
 
 if [ ${ACTUAL} = ${ANSWER} ]; then

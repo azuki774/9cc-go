@@ -1,3 +1,7 @@
+int i;
+int j;
+int k;
+
 i = 1;
 j = 1;
 k = 0;

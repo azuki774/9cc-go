@@ -1,7 +1,7 @@
-echoNum(n) {
+int echoNum(int n) {
   return n;
 }
 
-main() {
+int main() {
   return echoNum(5);
 }

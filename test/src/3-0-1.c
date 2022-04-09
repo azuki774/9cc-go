@@ -1,8 +1,9 @@
-fiveFunc() {
+int fiveFunc() {
   return 5;
 }
 
-main() {
+int main() {
+  int a;
   a = fiveFunc();
   return a + 1;
 }
