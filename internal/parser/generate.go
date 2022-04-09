@@ -49,13 +49,24 @@ func genCodePrologue(funcName string, argsNum int) {
 	}
 	// スタックの中は rbp | args1 | args2 | ... | args8 | localVar1 | localVar2 | ... | locanVarN | <- rsp
 	// 引数を仮引数に割りあて
-	if argsNum == 1 {
-		generatingCode = append(generatingCode, "mov rsp, rbp\n")   // rsp のアドレス = rbp のアドレス
-		generatingCode = append(generatingCode, "sub rsp, 8\n")     // 1つ目の変数のアドレス
-		generatingCode = append(generatingCode, "mov [rsp], rdi\n") // 1つ目の変数のアドレス
+	// if argsNum == 1 {
+	// 	generatingCode = append(generatingCode, "mov rsp, rbp\n")   // rsp のアドレス = rbp のアドレス
+	// 	generatingCode = append(generatingCode, "sub rsp, 8\n")     // 1つ目の変数のアドレス
+	// 	generatingCode = append(generatingCode, "mov [rsp], rdi\n") // 1つ目の変数のアドレス
 
+	// 	generatingCode = append(generatingCode, "mov rsp, rbp\n")
+	// 	generatingCode = append(generatingCode, "sub rsp, 256\n") // ローカル変数用に容量確保 32 * 8
+	// }
+
+	if argsNum > 0 {
+		generatingCode = append(generatingCode, "mov rsp, rbp\n") // 一旦変数領域のスタックのベースに移動
+		for i := 0; i < argsNum; i++ {
+			// 受け取った引数に変数を書き換えていく
+			generatingCode = append(generatingCode, "sub rsp, 8\n")                                      // i個目の引数のアドレスに移動
+			generatingCode = append(generatingCode, fmt.Sprintf("mov [rsp], %s\n", argsRegisterName[i])) // i個目の引数を書き換え
+		}
 		generatingCode = append(generatingCode, "mov rsp, rbp\n")
-		generatingCode = append(generatingCode, "sub rsp, 256\n") // ローカル変数用に容量確保 32 * 8
+		generatingCode = append(generatingCode, "sub rsp, 256\n") // 元の位置に復帰
 	}
 }
 
@@ -162,18 +173,16 @@ func genCode(node *abstSyntaxNode) {
 		var argsNum int = 0
 		argsNode := node.leftNode
 		if argsNode.value != nil {
-			argsNum = 1
+			argsNum = len(argsNode.value.([]*abstSyntaxNode))
 		}
 
 		genCodePrologue(funcName, argsNum)
 		genCode(node.rightNode)
 		return
 	case ND_FUNDEF_ARGS:
-		if node.value != nil {
-			argsNodes := node.value.([]*abstSyntaxNode)
-			for _, v := range argsNodes {
-				genCode(v) // 変数を定義する
-			}
+		argsNodes := node.value.([]*abstSyntaxNode)
+		for _, v := range argsNodes {
+			genCode(v) // 変数を定義する
 		}
 		return
 	case ND_FUNCALL:
@@ -181,12 +190,10 @@ func genCode(node *abstSyntaxNode) {
 		funcName := node.value.(string)
 
 		// ND_FUNCALL_ARGS
-		if node.leftNode.value != nil { // 引数ありのとき
-			argsNode := node.leftNode.value.([]*abstSyntaxNode)
-			for i, v := range argsNode {
-				genCode(v)
-				generatingCode = append(generatingCode, fmt.Sprintf("pop %s\n", argsRegisterName[i]))
-			}
+		argsNode := node.leftNode.value.([]*abstSyntaxNode)
+		for i, v := range argsNode {
+			genCode(v)
+			generatingCode = append(generatingCode, fmt.Sprintf("pop %s\n", argsRegisterName[i]))
 		}
 		// rsp を 16の倍数にする調整
 		jumpLabel++

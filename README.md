@@ -6,6 +6,7 @@
 - 複数文字変数の参照と代入
 - for, if, while 文の実装
 - block の実装 { }
+- 6引数までの関数実装、呼び出し、RSP 16の倍数対応(ABI)
 
 ## Usage
 ``` consolev
