@@ -19,7 +19,7 @@ var (
 	ND_EQ           = 25 // =
 	ND_ADDR         = 26 // &hoge
 	ND_DEREF        = 27 // *hoge
-	ND_LVAR         = 31 // local variable
+	ND_LVAR         = 31 // local variable, value に struct Var
 	ND_RETURN       = 41
 	ND_IF           = 42
 	ND_ELSE         = 43
@@ -33,7 +33,18 @@ var (
 	ND_FUNDEF_ARGS  = 51 // value に args の node のスライスを詰める
 )
 
-var typeStruct = []string{"int"}
+type TypeKind string
+
+const (
+	TypeInt = TypeKind("int")
+	TypePtr = TypeKind("pointer")
+)
+
+type Var struct {
+	kind   TypeKind
+	PtrTo  *Var
+	Offset int
+}
 
 type abstSyntaxNode struct {
 	nodeKind  int
@@ -47,7 +58,7 @@ func makeNewAbstSyntaxNode(nodeKind int, leftNode *abstSyntaxNode, rightNode *ab
 }
 
 func ParserMain(tokens []Token) (nodes []*abstSyntaxNode, err error) {
-	localVar = map[string]int{}
+	localVar = map[string]Var{}
 	ts = newTokenStream(tokens)
 	if !NoMain {
 		nodes, err = Expr_program(ts)

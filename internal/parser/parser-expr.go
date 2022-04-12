@@ -2,7 +2,8 @@ package parser
 
 import "fmt"
 
-var localVar map[string]int // varName -> offset
+var localVar map[string]Var // varName -> offset
+var offsetCounter int
 
 func Expr_program(ts *tokenStream) (nodes []*abstSyntaxNode, err error) {
 
@@ -13,7 +14,8 @@ func Expr_program(ts *tokenStream) (nodes []*abstSyntaxNode, err error) {
 
 		// ident "(" ")" stmt
 		if ts.nextPeekToken().kind == TK_IDENT {
-			localVar = make(map[string]int) // 各変数のパース前にローカル変数テーブルを初期化
+			localVar = make(map[string]Var) // 各変数のパース前にローカル変数テーブルを初期化
+			offsetCounter = 8
 
 			ts.nextToken() // int
 
@@ -512,9 +514,10 @@ func Expr_primary() (node *abstSyntaxNode, err error) {
 				return nil, fmt.Errorf("%s is already defined", name)
 			} else {
 				// 変数が未定義
-				offset := (len(localVar) + 1) * 8
-				localVar[name] = offset
-				node = makeNewAbstSyntaxNode(ND_LVAR, nil, nil, int(offset))
+				nvar := Var{kind: TypeInt, PtrTo: nil, Offset: offsetCounter}
+				offsetCounter += 8
+				localVar[name] = nvar
+				node = makeNewAbstSyntaxNode(ND_LVAR, nil, nil, nvar)
 			}
 
 			return node, nil
@@ -522,9 +525,9 @@ func Expr_primary() (node *abstSyntaxNode, err error) {
 
 		if ts.nextPeekToken().kind != TK_SYMBOL_LEFTPAT {
 			// 変数のとき
-			if offset, ok := localVar[name]; ok {
+			if nvar, ok := localVar[name]; ok {
 				// 変数が定義済
-				node = makeNewAbstSyntaxNode(ND_LVAR, nil, nil, int(offset))
+				node = makeNewAbstSyntaxNode(ND_LVAR, nil, nil, nvar)
 			} else {
 				// 変数が未定義
 				return nil, fmt.Errorf("%s is not defined yet", name)
