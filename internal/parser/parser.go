@@ -1,5 +1,7 @@
 package parser
 
+import "fmt"
+
 var (
 	ts *tokenStream
 )
@@ -40,10 +42,15 @@ const (
 	TypePtr = TypeKind("pointer")
 )
 
-type Var struct {
+type variableManager struct {
+	varList    map[string]variable
+	nextoffset int
+}
+
+type variable struct {
 	kind   TypeKind
-	PtrTo  *Var
-	Offset int
+	ptrTo  *variable
+	offset int
 }
 
 type abstSyntaxNode struct {
@@ -57,8 +64,33 @@ func makeNewAbstSyntaxNode(nodeKind int, leftNode *abstSyntaxNode, rightNode *ab
 	return &abstSyntaxNode{nodeKind: nodeKind, leftNode: leftNode, rightNode: rightNode, value: value}
 }
 
+func makeNewVariableManager() *variableManager {
+	return &variableManager{varList: map[string]variable{}, nextoffset: 8}
+}
+
+func (v *variableManager) reset() {
+	v.varList = map[string]variable{}
+	v.nextoffset = 8
+}
+
+// 変数をvariableManager
+func (v *variableManager) add(varname string, kind TypeKind) (nvar variable, err error) {
+	if kind == TypeInt {
+		if _, ok := v.varList[varname]; ok {
+			// 変数が定義済
+			return variable{}, fmt.Errorf("%s is already defined", varname)
+		} else {
+			// 変数が未定義 -> 追加
+			nvar = variable{kind: TypeInt, ptrTo: nil, offset: v.nextoffset}
+			v.nextoffset += 8
+			v.varList[varname] = nvar
+		}
+	}
+
+	return nvar, nil
+}
+
 func ParserMain(tokens []Token) (nodes []*abstSyntaxNode, err error) {
-	localVar = map[string]Var{}
 	ts = newTokenStream(tokens)
 	if !NoMain {
 		nodes, err = Expr_program(ts)

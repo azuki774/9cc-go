@@ -2,21 +2,21 @@ package parser
 
 import "fmt"
 
-var localVar map[string]Var // varName -> offset
-var offsetCounter int
+// var localVar map[string]variable // varName -> offset
+var localVar *variableManager
 
 func Expr_program(ts *tokenStream) (nodes []*abstSyntaxNode, err error) {
+	localVar = makeNewVariableManager()
 
 	for {
 		if !ts.ok() {
 			break
 		}
 
+		localVar.reset()
+
 		// ident "(" ")" stmt
 		if ts.nextPeekToken().kind == TK_IDENT {
-			localVar = make(map[string]Var) // 各変数のパース前にローカル変数テーブルを初期化
-			offsetCounter = 8
-
 			ts.nextToken() // int
 
 			if ts.nextPeekToken().kind != TK_IDENT {
@@ -60,6 +60,8 @@ func Expr_program(ts *tokenStream) (nodes []*abstSyntaxNode, err error) {
 }
 
 func Expr_programNoMain(ts *tokenStream) (nodes []*abstSyntaxNode, err error) {
+	localVar = makeNewVariableManager()
+
 	for {
 		if !ts.ok() {
 			break
@@ -501,31 +503,26 @@ func Expr_primary() (node *abstSyntaxNode, err error) {
 		ts.nextToken() // 変数名 or 関数名トークン or 型名を消化する
 
 		if name == "int" {
+			// 変数定義
 			if ts.nextPeekToken().kind != TK_IDENT {
 				return nil, fmt.Errorf("Expr_primary: variable name error")
 			}
 
-			name := ts.nextPeekToken().value.(string)
-
+			varName := ts.nextPeekToken().value.(string)
 			ts.nextToken() // 変数名
 
-			if _, ok := localVar[name]; ok {
-				// 変数が定義済
-				return nil, fmt.Errorf("%s is already defined", name)
-			} else {
-				// 変数が未定義
-				nvar := Var{kind: TypeInt, PtrTo: nil, Offset: offsetCounter}
-				offsetCounter += 8
-				localVar[name] = nvar
-				node = makeNewAbstSyntaxNode(ND_LVAR, nil, nil, nvar)
+			nvar, err := localVar.add(varName, TypeInt)
+			if err != nil {
+				return nil, err
 			}
 
+			node = makeNewAbstSyntaxNode(ND_LVAR, nil, nil, nvar)
 			return node, nil
 		}
 
 		if ts.nextPeekToken().kind != TK_SYMBOL_LEFTPAT {
-			// 変数のとき
-			if nvar, ok := localVar[name]; ok {
+			// 変数評価
+			if nvar, ok := localVar.varList[name]; ok {
 				// 変数が定義済
 				node = makeNewAbstSyntaxNode(ND_LVAR, nil, nil, nvar)
 			} else {
@@ -533,7 +530,7 @@ func Expr_primary() (node *abstSyntaxNode, err error) {
 				return nil, fmt.Errorf("%s is not defined yet", name)
 			}
 		} else {
-			// 関数のとき
+			// 関数評価
 			ts.nextToken() // (
 
 			varNode := makeNewAbstSyntaxNode(ND_FUNCALL_ARGS, nil, nil, []*abstSyntaxNode{})

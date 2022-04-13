@@ -34,7 +34,7 @@ func genLocalVar(node *abstSyntaxNode) {
 
 	// 変数の値が入っているところにポインタを移動
 	generatingCode = append(generatingCode, "mov rax, rbp\n")
-	offsetCode := fmt.Sprintf("sub rax, %d\n", node.value.(Var).Offset) // offset 分だけずらす
+	offsetCode := fmt.Sprintf("sub rax, %d\n", node.value.(variable).offset) // offset 分だけずらす
 	generatingCode = append(generatingCode, offsetCode)
 
 	generatingCode = append(generatingCode, "push rax\n")
