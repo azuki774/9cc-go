@@ -5,11 +5,11 @@ int pnumAdd(int *x){
 
 int main(){
     int x;
-    int y;
+    int *y;
     x = 5;
     y = &x;
     pnumAdd(y);
-    showInt(*x);
-    return 09l
+    showInt(x);
+    return 0;
 }
 

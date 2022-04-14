@@ -75,18 +75,23 @@ func (v *variableManager) reset() {
 
 // 変数をvariableManager
 func (v *variableManager) add(varname string, kind TypeKind) (nvar variable, err error) {
-	if kind == TypeInt {
-		if _, ok := v.varList[varname]; ok {
-			// 変数が定義済
-			return variable{}, fmt.Errorf("%s is already defined", varname)
-		} else {
-			// 変数が未定義 -> 追加
+	if _, ok := v.varList[varname]; ok {
+		// 変数が定義済
+		return variable{}, fmt.Errorf("%s is already defined", varname)
+	} else {
+		// 変数が未定義 -> 追加
+		switch kind {
+		case TypeInt:
 			nvar = variable{kind: TypeInt, ptrTo: nil, offset: v.nextoffset}
 			v.nextoffset += 8
-			v.varList[varname] = nvar
+		case TypePtr:
+			nvar = variable{kind: TypePtr, ptrTo: nil, offset: v.nextoffset}
+			v.nextoffset += 8
 		}
+
 	}
 
+	v.varList[varname] = nvar
 	return nvar, nil
 }
 
