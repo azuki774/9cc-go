@@ -56,7 +56,7 @@ ${NOWDIR}/verify-nomain.sh ${NOWDIR}/src/2-7-0.c 1 || exit 1
 ${NOWDIR}/verify-nomain.sh ${NOWDIR}/src/2-7-1.c 2 || exit 1
 ${NOWDIR}/verify-nomain.sh ${NOWDIR}/src/2-7-2.c 97 || exit 1
 ${NOWDIR}/verify-nomain.sh ${NOWDIR}/src/2-7-3.c 2 || exit 1
-echo "-- No link printf --"
+echo "-- No linker --"
 ${NOWDIR}/verify-nolink.sh ${NOWDIR}/src/3-0-0.c 15 || exit 1
 ${NOWDIR}/verify-nolink.sh ${NOWDIR}/src/3-0-1.c 6 || exit 1
 ${NOWDIR}/verify-nolink.sh ${NOWDIR}/src/3-0-2.c 55 || exit 1
@@ -66,7 +66,11 @@ ${NOWDIR}/verify-nolink.sh ${NOWDIR}/src/3-1-2.c 55 || exit 1
 ${NOWDIR}/verify-nolink.sh ${NOWDIR}/src/3-1-3.c 100 || exit 1
 ${NOWDIR}/verify-nolink.sh ${NOWDIR}/src/3-1-4.c 13 || exit 1
 ${NOWDIR}/verify-nolink.sh ${NOWDIR}/src/3-1-5.c 55 || exit 1
-echo "-- link printf --"
+echo "-- linker --"
 ${NOWDIR}/verify.sh ${NOWDIR}/src/3-2-0.c 5 || exit 1
 ${NOWDIR}/verify.sh ${NOWDIR}/src/3-2-1.c 3 || exit 1
+${NOWDIR}/verify.sh ${NOWDIR}/src/3-2-2.c 3 || exit 1
+${NOWDIR}/verify.sh ${NOWDIR}/src/3-2-3.c 6 || exit 1
+# ${NOWDIR}/verify.sh ${NOWDIR}/src/3-2-4.c 1 || exit 1
+# ${NOWDIR}/verify.sh ${NOWDIR}/src/3-2-5.c 4 || exit 1
 echo "All test passed"

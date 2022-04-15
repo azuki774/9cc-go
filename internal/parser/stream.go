@@ -87,6 +87,16 @@ func (ts *tokenStream) ok() bool {
 	return !(ts.tokens[ts.index].kind == TK_EOF)
 }
 
+func (ts *tokenStream) backToken() (tk Token) {
+	if ts.index == 0 {
+		return ts.tokens[0]
+	}
+
+	tk = ts.tokens[ts.index-1]
+	ts.index--
+	return tk
+}
+
 func (ts *tokenStream) nextToken() (tk Token) {
 	tk = ts.tokens[ts.index]
 	ts.index++

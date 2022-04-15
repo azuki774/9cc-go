@@ -2,19 +2,21 @@ package parser
 
 import "fmt"
 
-var localVar map[string]int // varName -> offset
+// var localVar map[string]variable // varName -> offset
+var localVar *variableManager
 
 func Expr_program(ts *tokenStream) (nodes []*abstSyntaxNode, err error) {
+	localVar = makeNewVariableManager()
 
 	for {
 		if !ts.ok() {
 			break
 		}
 
+		localVar.reset()
+
 		// ident "(" ")" stmt
 		if ts.nextPeekToken().kind == TK_IDENT {
-			localVar = make(map[string]int) // 各変数のパース前にローカル変数テーブルを初期化
-
 			ts.nextToken() // int
 
 			if ts.nextPeekToken().kind != TK_IDENT {
@@ -58,6 +60,8 @@ func Expr_program(ts *tokenStream) (nodes []*abstSyntaxNode, err error) {
 }
 
 func Expr_programNoMain(ts *tokenStream) (nodes []*abstSyntaxNode, err error) {
+	localVar = makeNewVariableManager()
+
 	for {
 		if !ts.ok() {
 			break
@@ -496,63 +500,120 @@ func Expr_primary() (node *abstSyntaxNode, err error) {
 		node = makeNewAbstSyntaxNode(ND_NUM, nil, nil, ts.nextToken().value) // Token は 1つ進む
 	case TK_IDENT:
 		name := nToken.value.(string)
-		ts.nextToken() // 変数名 or 関数名トークン or 型名を消化する
 
 		if name == "int" {
-			if ts.nextPeekToken().kind != TK_IDENT {
-				return nil, fmt.Errorf("Expr_primary: variable name error")
+			// 変数定義
+			node, err = expr_defVar()
+			if err != nil {
+				return nil, err
 			}
-
-			name := ts.nextPeekToken().value.(string)
-
-			ts.nextToken() // 変数名
-
-			if _, ok := localVar[name]; ok {
-				// 変数が定義済
-				return nil, fmt.Errorf("%s is already defined", name)
-			} else {
-				// 変数が未定義
-				offset := (len(localVar) + 1) * 8
-				localVar[name] = offset
-				node = makeNewAbstSyntaxNode(ND_LVAR, nil, nil, int(offset))
-			}
-
 			return node, nil
 		}
 
+		if ts.nextPeekToken().kind == TK_SYMBOL_MUL {
+			// 変数評価 (*type)
+			node, err = expr_evalVar()
+			if err != nil {
+				return nil, err
+			}
+			return node, nil
+		}
+
+		ts.nextToken() // 一旦変数名を読み捨てる
+
 		if ts.nextPeekToken().kind != TK_SYMBOL_LEFTPAT {
-			// 変数のとき
-			if offset, ok := localVar[name]; ok {
-				// 変数が定義済
-				node = makeNewAbstSyntaxNode(ND_LVAR, nil, nil, int(offset))
-			} else {
-				// 変数が未定義
-				return nil, fmt.Errorf("%s is not defined yet", name)
+			// 変数評価
+			ts.backToken()
+			node, err = expr_evalVar()
+			if err != nil {
+				return nil, err
 			}
+			return node, nil
 		} else {
-			// 関数のとき
-			ts.nextToken() // (
-
-			varNode := makeNewAbstSyntaxNode(ND_FUNCALL_ARGS, nil, nil, []*abstSyntaxNode{})
-			for {
-				if ts.nextPeekToken().kind == TK_COMMA {
-					ts.nextToken() // ,
-				}
-				if ts.nextPeekToken().kind == TK_SYMBOL_RIGHTPAT {
-					break
-				}
-				newVarNode, err := Expr_add() // 変数定義node
-				if err != nil {
-					return nil, err
-				}
-				varNode.value = append(varNode.value.([]*abstSyntaxNode), newVarNode)
+			// 関数評価
+			ts.backToken()
+			node, err = expr_evalFunc()
+			if err != nil {
+				return nil, err
 			}
-
-			ts.nextToken() // )
-			node = makeNewAbstSyntaxNode(ND_FUNCALL, varNode, nil, name)
+			return node, nil
 		}
 
 	}
 
+	return node, nil
+}
+
+func expr_defVar() (node *abstSyntaxNode, err error) {
+	ts.nextToken() // int
+	if ts.nextPeekToken().kind != TK_IDENT && ts.nextPeekToken().kind != TK_SYMBOL_MUL {
+		return nil, fmt.Errorf("Expr_primary: variable name error")
+	}
+
+	// ポインタの*のTokenの数を計算
+	pointerCount := 0
+	for {
+		if ts.nextPeekToken().kind == TK_SYMBOL_MUL {
+			ts.nextToken() // *
+			pointerCount += 1
+		} else {
+			break
+		}
+	}
+
+	varName := ts.nextPeekToken().value.(string)
+	ts.nextToken() // 変数名
+
+	var nvar variable
+	if pointerCount == 0 {
+		nvar, err = localVar.add(varName, TypeInt)
+	} else {
+		nvar, err = localVar.add(varName, TypePtr)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	node = makeNewAbstSyntaxNode(ND_LVAR, nil, nil, nvar)
+	return node, nil
+}
+
+func expr_evalFunc() (node *abstSyntaxNode, err error) {
+	funcName := ts.nextPeekToken().value.(string)
+	ts.nextToken() // 関数名
+	ts.nextToken() // (
+
+	varNode := makeNewAbstSyntaxNode(ND_FUNCALL_ARGS, nil, nil, []*abstSyntaxNode{})
+	for {
+		if ts.nextPeekToken().kind == TK_COMMA {
+			ts.nextToken() // ,
+		}
+		if ts.nextPeekToken().kind == TK_SYMBOL_RIGHTPAT {
+			break
+		}
+		newVarNode, err := Expr_add() // 変数定義node
+		if err != nil {
+			return nil, err
+		}
+		varNode.value = append(varNode.value.([]*abstSyntaxNode), newVarNode)
+	}
+
+	ts.nextToken() // )
+	node = makeNewAbstSyntaxNode(ND_FUNCALL, varNode, nil, funcName)
+	return node, nil
+}
+
+func expr_evalVar() (node *abstSyntaxNode, err error) {
+	varName := ts.nextPeekToken().value.(string)
+	ts.nextToken() // 変数名
+
+	if nvar, ok := localVar.varList[varName]; ok {
+		// 変数が定義済
+		node = makeNewAbstSyntaxNode(ND_LVAR, nil, nil, nvar)
+	} else {
+		// 変数が未定義
+		return nil, fmt.Errorf("%s is not defined yet", varName)
+	}
 	return node, nil
 }

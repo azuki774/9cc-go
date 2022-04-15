@@ -28,16 +28,24 @@ func genEndCode() {
 
 func genLocalVar(node *abstSyntaxNode) {
 	// スタックの最後尾に変数のあるアドレスを入れる
-	if node.nodeKind != ND_LVAR {
-		panic(fmt.Errorf("genLocalVar : left value is not variable"))
+
+	if node.nodeKind == ND_LVAR {
+		// 変数の値が入っているところにポインタを移動
+		generatingCode = append(generatingCode, "mov rax, rbp\n")
+		offsetCode := fmt.Sprintf("sub rax, %d\n", node.value.(variable).offset) // offset 分だけずらす
+		generatingCode = append(generatingCode, offsetCode)
+
+		generatingCode = append(generatingCode, "push rax\n")
+		return
 	}
 
-	// 変数の値が入っているところにポインタを移動
-	generatingCode = append(generatingCode, "mov rax, rbp\n")
-	offsetCode := fmt.Sprintf("sub rax, %d\n", node.value.(int)) // offset 分だけずらす
-	generatingCode = append(generatingCode, offsetCode)
+	if node.nodeKind == ND_DEREF {
+		// 左辺値がDEREF(*)のとき
+		genCode(node.leftNode)
+		return
+	}
 
-	generatingCode = append(generatingCode, "push rax\n")
+	panic(fmt.Errorf("genLocalVar : left value is not variable, actual = %d", node.nodeKind))
 }
 
 func genCodePrologue(funcName string, argsNum int) {

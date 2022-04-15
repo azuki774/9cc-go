@@ -1,8 +1,9 @@
 int main(){
     int x;
     int *y;
-    x = 3;
     y = &x;
-    showInt(*y);
+    *y = 3;
+    showInt(x);
     return 0;
 }
+
