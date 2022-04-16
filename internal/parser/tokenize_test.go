@@ -89,6 +89,7 @@ func Test_getNextToken(t *testing.T) {
 	ss26 := newStringStream(",abcd")
 	ss27 := newStringStream("&abcd")
 	ss28 := newStringStream("*x")
+	ss29 := newStringStream("sizeof(x)")
 	type args struct {
 		ss *stringStream
 	}
@@ -264,6 +265,12 @@ func Test_getNextToken(t *testing.T) {
 			name:      "*x",
 			args:      args{ss: ss28},
 			wantToken: Token{kind: TK_MUL},
+			wantErr:   false,
+		},
+		{
+			name:      "sizeof",
+			args:      args{ss: ss29},
+			wantToken: Token{kind: TK_SIZEOF},
 			wantErr:   false,
 		},
 	}

@@ -35,6 +35,7 @@ const (
 	TK_WHILE     = TokenKind("TK_WHILE")
 	TK_FOR       = TokenKind("TK_FOR")
 	TK_IDENT     = TokenKind("TK_IDENT") // Token.Value -> string (name)
+	TK_SIZEOF    = TokenKind("TK_SIZEOF")
 	TK_EOF       = TokenKind("TK_EOF")
 
 	// // Token category in kind
@@ -88,7 +89,7 @@ func (token *Token) ShowString() (str string) {
 	case TK_EOF:
 		str = "TK_EOF"
 	default:
-		str = fmt.Sprintf("TK_SYMBOL: %s", token.kind)
+		str = string(token.kind)
 	}
 	return str
 }
@@ -136,6 +137,8 @@ func getNextToken(ss *stringStream) (token Token, err error) {
 				token = Token{kind: TK_WHILE}
 			case "for":
 				token = Token{kind: TK_FOR}
+			case "sizeof":
+				token = Token{kind: TK_SIZEOF}
 			default:
 				token = Token{kind: TK_IDENT, value: word}
 			}

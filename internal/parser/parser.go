@@ -97,6 +97,27 @@ func (v *variableManager) add(varname string, kind TypeKind) (nvar variable, err
 	return nvar, nil
 }
 
+func getSizeOf(node *abstSyntaxNode) (size int, err error) {
+	switch node.nodeKind {
+	case ND_NUM:
+		return 4, nil
+	case ND_LVAR:
+		nvar := node.value.(variable)
+		switch nvar.kind {
+		case TypeInt:
+			return 4, nil
+		case TypePtr:
+			return 8, nil
+		default:
+			return 0, fmt.Errorf("getSizeOf: %s is not implemented", string(nvar.kind))
+		}
+	default:
+		return 0, fmt.Errorf("getSizeOf: %s is not a valid type", string(node.nodeKind))
+	}
+
+	return 0, nil
+}
+
 func ParserMain(tokens []Token) (nodes []*abstSyntaxNode, err error) {
 	ts = newTokenStream(tokens)
 	if !NoMain {

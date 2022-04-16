@@ -437,6 +437,7 @@ func Expr_unary() (node *abstSyntaxNode, err error) {
 	// "*" unary
 	// "&" unary
 	// +x -> x, -x -> 0-x
+	// "sizeof" unary
 	nToken := ts.nextPeekToken()
 	switch nToken.kind {
 	case TK_ADD:
@@ -470,6 +471,16 @@ func Expr_unary() (node *abstSyntaxNode, err error) {
 			return nil, err
 		}
 		node = makeNewAbstSyntaxNode(ND_ADDR, e, nil, nil) // &e
+		return node, nil
+	case TK_SIZEOF:
+		ts.nextToken()
+		e, err := Expr_unary()
+		if err != nil {
+			return nil, err
+		}
+		// e を見て sizeof e を評価してしまう
+		size, err := getSizeOf(e)
+		node = makeNewAbstSyntaxNode(ND_NUM, nil, nil, size)
 		return node, nil
 	}
 
