@@ -5,38 +5,40 @@ import (
 	"strconv"
 )
 
-var (
-	// Token.kind に入る
-	TK_UNDEFINED       = 0
-	TK_NUM             = 1 // Token.Value -> int
-	TK_SYMBOL_ADD      = 11
-	TK_SYMBOL_SUB      = 12
-	TK_SYMBOL_MUL      = 13
-	TK_SYMBOL_DIV      = 14
-	TK_SYMBOL_AND      = 15
-	TK_SYMBOL_LEFTPAT  = 16
-	TK_SYMBOL_RIGHTPAT = 17
-	TK_BLOCKL          = 18
-	TK_BLOCKR          = 19
-	TK_COMP            = 21 // ==
-	TK_NOTEQ           = 22 // !=
-	TK_LT              = 23 // <
-	TK_LTQ             = 24 // <=
-	TK_GT              = 25 // >
-	TK_GTQ             = 26 // >=
-	TK_EQ              = 27 // =
-	TK_SEMICOLON       = 31 // ;
-	TK_COMMA           = 32
-	TK_RETURN          = 50 // return
-	TK_IF              = 51
-	TK_ELSE            = 52
-	TK_WHILE           = 53
-	TK_FOR             = 54
-	TK_IDENT           = 101 // Token.Value -> string (name)
-	TK_EOF             = 255
+type TokenKind string
 
-	// Token category in kind
-	TK_LIST_IDENT = []int{TK_IDENT}
+const (
+	// Token.kind に入る
+	TK_UNDEFINED = TokenKind("TK_UNDEFINED")
+	TK_NUM       = TokenKind("TK_NUM") // Token.Value -> int
+	TK_ADD       = TokenKind("TK_ADD")
+	TK_SUB       = TokenKind("TK_SUB")
+	TK_MUL       = TokenKind("TK_MUL")
+	TK_DIV       = TokenKind("TK_DIV")
+	TK_AND       = TokenKind("TK_AND")
+	TK_LEFTPAT   = TokenKind("TK_LEFTPAT")
+	TK_RIGHTPAT  = TokenKind("TK_RIGHTPAT")
+	TK_BLOCKL    = TokenKind("TK_BLOCKL")
+	TK_BLOCKR    = TokenKind("TK_BLOCKR")
+	TK_COMP      = TokenKind("TK_COMP")      // ==
+	TK_NOTEQ     = TokenKind("TK_NOTEQ")     // !=
+	TK_LT        = TokenKind("TK_LT")        // <
+	TK_LTQ       = TokenKind("TK_LTQ")       // <=
+	TK_GT        = TokenKind("TK_GT")        // >
+	TK_GTQ       = TokenKind("TK_GTQ")       // >=
+	TK_EQ        = TokenKind("TK_EQ")        // =
+	TK_SEMICOLON = TokenKind("TK_SEMICOLON") // ;
+	TK_COMMA     = TokenKind("TK_COMMA")
+	TK_RETURN    = TokenKind("TK_RETURN") // return
+	TK_IF        = TokenKind("TK_IF")
+	TK_ELSE      = TokenKind("TK_ELSE")
+	TK_WHILE     = TokenKind("TK_WHILE")
+	TK_FOR       = TokenKind("TK_FOR")
+	TK_IDENT     = TokenKind("TK_IDENT") // Token.Value -> string (name)
+	TK_EOF       = TokenKind("TK_EOF")
+
+	// // Token category in kind
+	// TK_LIST_IDENT = []int{TK_IDENT}
 )
 
 var (
@@ -71,7 +73,7 @@ var (
 )
 
 type Token struct {
-	kind  int
+	kind  TokenKind
 	value interface{}
 }
 
@@ -86,7 +88,7 @@ func (token *Token) ShowString() (str string) {
 	case TK_EOF:
 		str = "TK_EOF"
 	default:
-		str = fmt.Sprintf("TK_SYMBOL: %d", token.kind)
+		str = fmt.Sprintf("TK_SYMBOL: %s", token.kind)
 	}
 	return str
 }
@@ -103,6 +105,7 @@ func contains(b byte, bs []byte) bool {
 
 func getNextToken(ss *stringStream) (token Token, err error) {
 	numString := ""
+	token.kind = TK_UNDEFINED
 
 	for {
 		if !ss.ok() {
@@ -115,6 +118,7 @@ func getNextToken(ss *stringStream) (token Token, err error) {
 
 		// 次の文字が見て読むべきかどうか判定
 		nChar := ss.nextPeekChar()
+
 		if !isContinueLoadNextChar(nChar, token) {
 			break
 		}
@@ -145,17 +149,17 @@ func getNextToken(ss *stringStream) (token Token, err error) {
 		if contains(nChar, TK_SYMBOL_LIST) {
 			switch nChar {
 			case BYTE_SYMBOL_ADD:
-				token = Token{kind: TK_SYMBOL_ADD}
+				token = Token{kind: TK_ADD}
 			case BYTE_SYMBOL_SUB:
-				token = Token{kind: TK_SYMBOL_SUB}
+				token = Token{kind: TK_SUB}
 			case BYTE_SYMBOL_MUL:
-				token = Token{kind: TK_SYMBOL_MUL}
+				token = Token{kind: TK_MUL}
 			case BYTE_SYMBOL_DIV:
-				token = Token{kind: TK_SYMBOL_DIV}
+				token = Token{kind: TK_DIV}
 			case BYTE_LEFTPAT:
-				token = Token{kind: TK_SYMBOL_LEFTPAT}
+				token = Token{kind: TK_LEFTPAT}
 			case BYTE_RIGHTPAT:
-				token = Token{kind: TK_SYMBOL_RIGHTPAT}
+				token = Token{kind: TK_RIGHTPAT}
 			case BYTE_EQUAL:
 				nnChar := ss.nextPeekChar()
 				if nnChar == BYTE_EQUAL {
@@ -198,7 +202,7 @@ func getNextToken(ss *stringStream) (token Token, err error) {
 			case BYTE_COMMA:
 				token = Token{kind: TK_COMMA}
 			case BYTE_AND:
-				token = Token{kind: TK_SYMBOL_AND}
+				token = Token{kind: TK_AND}
 			}
 
 			break

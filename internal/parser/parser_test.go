@@ -7,7 +7,7 @@ import (
 
 func Test_makeNewAbstSyntaxNode(t *testing.T) {
 	type args struct {
-		nodeKind  int
+		nodeKind  NodeKind
 		leftNode  *abstSyntaxNode
 		rightNode *abstSyntaxNode
 		value     interface{}

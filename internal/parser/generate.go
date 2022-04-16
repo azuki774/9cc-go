@@ -45,7 +45,7 @@ func genLocalVar(node *abstSyntaxNode) {
 		return
 	}
 
-	panic(fmt.Errorf("genLocalVar : left value is not variable, actual = %d", node.nodeKind))
+	panic(fmt.Errorf("genLocalVar : left value is not variable, actual = %s", node.nodeKind))
 }
 
 func genCodePrologue(funcName string, argsNum int) {
