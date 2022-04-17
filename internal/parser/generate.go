@@ -277,16 +277,27 @@ func (cm *CodeManager) genCode(node *abstSyntaxNode) (err error) {
 
 	// 左辺と右辺にポインタがあるか確認
 	existsPointer := 0
+	pointerWidth := 0
 	// 0 なら存在しない、1なら左辺、2なら右辺、3は両辺 (Error)
 	if node.leftNode.nodeKind == ND_LVAR {
 		if node.leftNode.value.(variable).kind.primKind == TypePtr {
 			existsPointer += 1
+			if node.leftNode.value.(variable).kind.ptrTo.primKind == TypePtr {
+				pointerWidth = 8
+			} else {
+				pointerWidth = 4
+			}
 		}
 	}
 
 	if node.rightNode.nodeKind == ND_LVAR {
 		if node.rightNode.value.(variable).kind.primKind == TypePtr {
 			existsPointer += 2
+			if node.leftNode.value.(variable).kind.ptrTo.primKind == TypePtr {
+				pointerWidth = 8
+			} else {
+				pointerWidth = 4
+			}
 		}
 	}
 
@@ -300,10 +311,10 @@ func (cm *CodeManager) genCode(node *abstSyntaxNode) (err error) {
 		cm.AddCode("pop rdi") // right node
 		cm.AddCode("pop rax") // left node
 		if existsPointer == 2 {
-			cm.AddCode("imul rdi, 8") // right node
+			cm.AddCode("imul rdi, %d", pointerWidth) // right node
 		}
 		if existsPointer == 1 {
-			cm.AddCode("imul rax, 8") // left node
+			cm.AddCode("imul rax, %d", pointerWidth) // left node
 		}
 
 		if node.nodeKind == ND_ADD {

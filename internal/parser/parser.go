@@ -40,6 +40,7 @@ const (
 type TypeKind struct {
 	primKind TypePrimKind
 	ptrTo    *TypeKind
+	width    int // この型が必要なbyte数
 }
 
 type TypePrimKind string
@@ -78,13 +79,13 @@ func makeNewVariableManager() *variableManager {
 
 // (*n)TypePrimKind 型を作成する。
 func makeTypeKind(tpk TypePrimKind, n int) (typeKind TypeKind) {
-	ty0 := TypeKind{primKind: TypeInt, ptrTo: nil}
+	ty0 := TypeKind{primKind: TypeInt, ptrTo: nil, width: 4}
 	if n == 0 {
 		return ty0
 	}
 	ty := []TypeKind{ty0}
 	for i := 0; i < n; i++ {
-		tyn := TypeKind{primKind: TypePtr, ptrTo: &ty[i]}
+		tyn := TypeKind{primKind: TypePtr, ptrTo: &ty[i], width: 8}
 		ty = append(ty, tyn)
 	}
 	return ty[n]
@@ -110,22 +111,47 @@ func (v *variableManager) add(varname string, kind TypeKind) (nvar variable, err
 	return nvar, nil
 }
 
+// 実装途中 TODO; x + 2, p + 2 などの式
 func getSizeOf(node *abstSyntaxNode) (size int, err error) {
-	switch node.nodeKind {
+	pcount := 0 // 何個のポインタの型か * -> +1
+	pc := node
+	if node.nodeKind == ND_DEREF {
+		for {
+			if pc.nodeKind != ND_DEREF {
+				break
+			}
+			pc = pc.leftNode
+			pcount++
+		}
+	}
+
+	if node.nodeKind == ND_ADDR {
+		for {
+			if pc.nodeKind != ND_ADDR {
+				break
+			}
+			pc = pc.leftNode
+			pcount--
+		}
+	}
+
+	if pcount < 0 {
+		return 8, nil
+	}
+
+	switch pc.nodeKind {
 	case ND_NUM:
 		return 4, nil
 	case ND_LVAR:
-		nvar := node.value.(variable)
-		switch nvar.kind.primKind {
-		case TypeInt:
-			return 4, nil
-		case TypePtr:
-			return 8, nil
-		default:
-			return 0, fmt.Errorf("getSizeOf: %s is not implemented", string(nvar.kind.primKind))
+		nvarKind := pc.value.(variable).kind
+		pck := &nvarKind
+		// * の数だけ型から*を取る
+		for i := 0; i < pcount; i++ {
+			pck = pck.ptrTo
 		}
+		return pck.width, nil
 	default:
-		return 0, fmt.Errorf("getSizeOf: %s is not a valid type", string(node.nodeKind))
+		return 0, fmt.Errorf("[NOT IMPLEMENTED] getSizeOf: %s is not a valid type", string(node.nodeKind))
 	}
 
 	return 0, nil

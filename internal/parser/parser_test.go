@@ -81,8 +81,8 @@ func Test_variableManager_add(t *testing.T) {
 
 func Test_getSizeOf(t *testing.T) {
 	n1 := makeNewAbstSyntaxNode(ND_NUM, nil, nil, 12345)
-	n2 := makeNewAbstSyntaxNode(ND_LVAR, nil, nil, variable{kind: TypeKind{primKind: TypeInt}})
-	n3 := makeNewAbstSyntaxNode(ND_LVAR, nil, nil, variable{kind: TypeKind{primKind: TypePtr}})
+	n2 := makeNewAbstSyntaxNode(ND_LVAR, nil, nil, variable{kind: TypeKind{primKind: TypeInt, width: 4}})
+	n3 := makeNewAbstSyntaxNode(ND_LVAR, nil, nil, variable{kind: TypeKind{primKind: TypePtr, width: 8}})
 	type args struct {
 		node *abstSyntaxNode
 	}

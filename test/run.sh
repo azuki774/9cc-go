@@ -71,6 +71,15 @@ ${NOWDIR}/verify.sh ${NOWDIR}/src/3-2-0.c 5 || exit 1
 ${NOWDIR}/verify.sh ${NOWDIR}/src/3-2-1.c 3 || exit 1
 ${NOWDIR}/verify.sh ${NOWDIR}/src/3-2-2.c 3 || exit 1
 ${NOWDIR}/verify.sh ${NOWDIR}/src/3-2-3.c 6 || exit 1
-# ${NOWDIR}/verify.sh ${NOWDIR}/src/3-2-4.c 1 || exit 1
-# ${NOWDIR}/verify.sh ${NOWDIR}/src/3-2-5.c 4 || exit 1
+${NOWDIR}/verify.sh ${NOWDIR}/src/3-2-4.c 100 || exit 1
+${NOWDIR}/verify.sh ${NOWDIR}/src/3-3-0.c 4 || exit 1
+${NOWDIR}/verify.sh ${NOWDIR}/src/3-3-1.c 8 || exit 1
+# ${NOWDIR}/verify.sh ${NOWDIR}/src/3-3-2.c 4 || exit 1
+# ${NOWDIR}/verify.sh ${NOWDIR}/src/3-3-3.c 8 || exit 1
+${NOWDIR}/verify.sh ${NOWDIR}/src/3-3-4.c 4 || exit 1
+${NOWDIR}/verify.sh ${NOWDIR}/src/3-3-5.c 4 || exit 1
+${NOWDIR}/verify.sh ${NOWDIR}/src/3-3-6.c 4 || exit 1
+${NOWDIR}/verify.sh ${NOWDIR}/src/3-3-7.c 4 || exit 1
+${NOWDIR}/verify.sh ${NOWDIR}/src/3-3-8.c 8 || exit 1
+${NOWDIR}/verify.sh ${NOWDIR}/src/3-3-9.c 8 || exit 1
 echo "All test passed"
