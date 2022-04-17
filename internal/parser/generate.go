@@ -2,215 +2,219 @@ package parser
 
 import "fmt"
 
-var generatingCode []string // 生成するアセンブリコード
-var jumpLabel = 0
-var NoMain bool = false // no-main = true なら ソースファイル全体をmain関数とする
 var argsRegisterName = []string{"rdi", "rsi", "rdx", "rcx", "r8", "r9"}
 
-func genInitCode() {
-	generatingCode = append(generatingCode, ".intel_syntax noprefix\n")
-	generatingCode = append(generatingCode, ".globl main\n")
-	if NoMain {
-		generatingCode = append(generatingCode, "main:\n")
-		genCodePrologue("main", 0)
+func (cm *CodeManager) genInitCode() {
+	cm.AddCode(".intel_syntax noprefix")
+	cm.AddCode(".globl main")
+	if cm.noMain {
+		cm.AddCode("main:")
+		cm.genCodePrologue("main", 0)
 	}
-
 }
 
-func genEndCode() {
+func (cm *CodeManager) genEndCode() {
 	// 関数を呼び出す前にスタックの状態を戻す
-	generatingCode = append(generatingCode, "mov rsp, rbp\n")
-	generatingCode = append(generatingCode, "pop rbp\n")
+	cm.AddCode("mov rsp, rbp")
+	cm.AddCode("pop rbp")
 
 	// raw に入っている値を return する
-	generatingCode = append(generatingCode, "ret\n")
+	cm.AddCode("ret")
 }
 
-func genLocalVar(node *abstSyntaxNode) (err error) {
+func (cm *CodeManager) genLocalVar(node *abstSyntaxNode) (err error) {
 	// スタックの最後尾に変数のあるアドレスを入れる
 
 	if node.nodeKind == ND_LVAR {
 		// 変数の値が入っているところにポインタを移動
-		generatingCode = append(generatingCode, "mov rax, rbp\n")
-		offsetCode := fmt.Sprintf("sub rax, %d\n", node.value.(variable).offset) // offset 分だけずらす
-		generatingCode = append(generatingCode, offsetCode)
+		cm.AddCode("mov rax, rbp")
+		cm.AddCode("sub rax, %v", node.value.(variable).offset) // offset 分だけずらす
 
-		generatingCode = append(generatingCode, "push rax\n")
+		cm.AddCode("push rax")
+		// offset 分だけずらす
+
 		return
 	}
 
 	if node.nodeKind == ND_DEREF {
 		// 左辺値がDEREF(*)のとき
-		genCode(node.leftNode)
+		cm.genCode(node.leftNode)
 		return
 	}
 
-	panic(fmt.Errorf("genLocalVar : left value is not variable, actual = %s", node.nodeKind))
+	return fmt.Errorf("genLocalVar : left value is not variable, actual = %s", node.nodeKind)
 }
 
-func genCodePrologue(funcName string, argsNum int) {
-	generatingCode = append(generatingCode, "push rbp\n")
-	generatingCode = append(generatingCode, "mov rbp, rsp\n") // rbp のアドレス = rsp のアドレス
-	generatingCode = append(generatingCode, "sub rsp, 256\n") // ローカル変数用に容量確保 32 * 8
+func (cm *CodeManager) genCodePrologue(funcName string, argsNum int) {
+	cm.AddCode("push rbp")
+	cm.AddCode("mov rbp, rsp") // rbp のアドレス = rsp のアドレス
+	cm.AddCode("sub rsp, 256") // ローカル変数用に容量確保 32 * 8
+
 	if funcName == "main" {
 		return
 	}
 
 	if argsNum > 0 {
-		generatingCode = append(generatingCode, "mov rsp, rbp\n") // 一旦変数領域のスタックのベースに移動
+		cm.AddCode("mov rsp, rbp") // 一旦変数領域のスタックのベースに移動
 		for i := 0; i < argsNum; i++ {
 			// 受け取った引数に変数を書き換えていく
-			generatingCode = append(generatingCode, "sub rsp, 8\n")                                      // i個目の引数のアドレスに移動
-			generatingCode = append(generatingCode, fmt.Sprintf("mov [rsp], %s\n", argsRegisterName[i])) // i個目の引数を書き換え
+			cm.AddCode("sub rsp, 8")                         // i個目の引数のアドレスに移動
+			cm.AddCode("mov [rsp], %v", argsRegisterName[i]) // i個目の引数を書き換え
 		}
-		generatingCode = append(generatingCode, "mov rsp, rbp\n")
-		generatingCode = append(generatingCode, "sub rsp, 256\n") // 元の位置に復帰
+		cm.AddCode("mov rsp, rbp") // rbp のアドレス = rsp のアドレス
+		cm.AddCode("sub rsp, 256") // ローカル変数用に容量確保 32 * 8
 	}
 }
 
-func genCode(node *abstSyntaxNode) (err error) {
+func (cm *CodeManager) genCode(node *abstSyntaxNode) (err error) {
 	// num | local var | = は先に処理する
-	nowJumpLabel := jumpLabel
+	nowJumpLabel := cm.getJumpLabel()
 	switch node.nodeKind {
 	case ND_NIL:
 		return
 	case ND_NUM:
-		newCode := fmt.Sprintf("push %d\n", node.value.(int))
-		generatingCode = append(generatingCode, newCode)
+		cm.AddCode("push %d", node.value.(int))
 		return
 	case ND_LVAR: // local var
-		if err := genLocalVar(node); err != nil { // スタックの最後尾に変数のあるアドレスが入る
+		if err := cm.genLocalVar(node); err != nil { // スタックの最後尾に変数のあるアドレスが入る
 			return err
 		}
-		generatingCode = append(generatingCode, "pop rax\n")        // 変数のあるアドレスがスタックから消え、raxに入る
-		generatingCode = append(generatingCode, "mov rax, [rax]\n") // rax の中身に rax を書きかえ、変数の値になる
-		generatingCode = append(generatingCode, "push rax\n")       // 変数の値をスタックに入れる
+
+		cm.AddCode("pop rax")        // 変数のあるアドレスがスタックから消え、raxに入る
+		cm.AddCode("mov rax, [rax]") // rax の中身に rax を書きかえ、変数の値になる
+		cm.AddCode("push rax")       // 変数の値をスタックに入れる
 		return
 	case ND_EQ:
 		// 左辺をローカル変数として評価する
-		if err := genLocalVar(node.leftNode); err != nil { // スタックに左辺の変数のアドレスを入れるコード
+		if err := cm.genLocalVar(node.leftNode); err != nil { // スタックに左辺の変数のアドレスを入れるコード
 			return err
 		}
-		if err := genCode(node.rightNode); err != nil { // スタックに右辺を計算した結果を入れるコード
+		if err := cm.genCode(node.rightNode); err != nil { // スタックに右辺を計算した結果を入れるコード
 			return err
 		}
-		generatingCode = append(generatingCode, "pop rdi\n")
-		generatingCode = append(generatingCode, "pop rax\n")
-		generatingCode = append(generatingCode, "mov [rax], rdi\n") // 変数の値を直接右辺に書き換える
-		generatingCode = append(generatingCode, "push rdi\n")
+
+		cm.AddCode("pop rdi")
+		cm.AddCode("pop rax")
+		cm.AddCode("mov [rax], rdi") // 変数の値を直接右辺に書き換える
+		cm.AddCode("push rdi\n")
+
 		return
 	case ND_ADDR: // &x
-		if err := genLocalVar(node.leftNode); err != nil { // スタックに左辺の変数のアドレスを入れるコード
+		if err := cm.genLocalVar(node.leftNode); err != nil { // スタックに左辺の変数のアドレスを入れるコード
 			return err
 		}
 		return
 	case ND_DEREF: // *x
-		if err := genCode(node.leftNode); err != nil { // スタックに左辺の変数のアドレスを入れるコード
+		if err := cm.genCode(node.leftNode); err != nil { // スタックに左辺の変数のアドレスを入れるコード
 			return err
 		}
-		generatingCode = append(generatingCode, "pop rax\n")
-		generatingCode = append(generatingCode, "mov rax, [rax]\n")
-		generatingCode = append(generatingCode, "push rax\n")
+
+		cm.AddCode("pop rax")
+		cm.AddCode("mov rax, [rax]")
+		cm.AddCode("push rax")
+
 		return
 	case ND_RETURN:
-		if err := genCode(node.leftNode); err != nil { // return する値を評価するコード
+		if err := cm.genCode(node.leftNode); err != nil { // return する値を評価するコード
 			return err
 		}
-		generatingCode = append(generatingCode, "pop rax\n")
+		cm.AddCode("pop rax")
 		// スタックを関数呼び出し前に戻す
-		generatingCode = append(generatingCode, "mov rsp, rbp\n")
-		generatingCode = append(generatingCode, "pop rbp\n")
+		cm.AddCode("mov rsp, rbp")
+		cm.AddCode("pop rbp")
 
-		generatingCode = append(generatingCode, "ret\n")
+		cm.AddCode("ret")
 		return
 	case ND_IF:
 		// if (A) B
-		jumpLabel++
-		if err := genCode(node.leftNode); err != nil { // A
+		cm.AddJumpLabel(1)
+		if err := cm.genCode(node.leftNode); err != nil { // A
 			return err
 		}
-		generatingCode = append(generatingCode, "pop rax\n")
-		generatingCode = append(generatingCode, "cmp rax, 0\n")
-		generatingCode = append(generatingCode, fmt.Sprintf("je  .Lend%d\n", nowJumpLabel))
-		if err := genCode(node.rightNode); err != nil { // B
+		cm.AddCode("pop rax")
+		cm.AddCode("cmp rax, 0")
+		cm.AddCode("je  .Lend%d", nowJumpLabel)
+		if err := cm.genCode(node.rightNode); err != nil { // B
 			return err
 		}
-		generatingCode = append(generatingCode, fmt.Sprintf(".Lend%d:\n", nowJumpLabel))
+		cm.AddCode(".Lend%d:", nowJumpLabel)
 		return
 	case ND_IFELSE:
 		// if (A) B else C
-		jumpLabel++
-		if err := genCode(node.leftNode); err != nil { // A
+		cm.AddJumpLabel(1)
+		if err := cm.genCode(node.leftNode); err != nil { // A
 			return err
 		}
-		generatingCode = append(generatingCode, "pop rax\n")
-		generatingCode = append(generatingCode, "cmp rax, 0\n")
-		generatingCode = append(generatingCode, fmt.Sprintf("je  .Lelse%d\n", nowJumpLabel))
-		if err := genCode(node.rightNode.leftNode); err != nil { // B
+		cm.AddCode("pop rax")
+		cm.AddCode("cmp rax, 0")
+		cm.AddCode("je  .Lelse%d", nowJumpLabel)
+
+		if err := cm.genCode(node.rightNode.leftNode); err != nil { // B
 			return err
 		}
-		generatingCode = append(generatingCode, fmt.Sprintf("jmp .Lend%d\n", nowJumpLabel))
-		generatingCode = append(generatingCode, fmt.Sprintf(".Lelse%d:\n", nowJumpLabel))
-		if err := genCode(node.rightNode.rightNode); err != nil { // C
+
+		cm.AddCode("jmp .Lend%d", nowJumpLabel)
+		cm.AddCode(".Lelse%d:", nowJumpLabel)
+		if err := cm.genCode(node.rightNode.rightNode); err != nil { // C
 			return err
 		}
-		generatingCode = append(generatingCode, fmt.Sprintf(".Lend%d:\n", nowJumpLabel))
+		cm.AddCode(".Lend%d:", nowJumpLabel)
 		return
 	case ND_WHILE:
 		// while (A) B
-		jumpLabel++
-		generatingCode = append(generatingCode, fmt.Sprintf(".Lbegin%d:\n", nowJumpLabel))
-		if err := genCode(node.leftNode); err != nil { // A
+		cm.AddJumpLabel(1)
+		cm.AddCode(".Lbegin%d:", nowJumpLabel)
+		if err := cm.genCode(node.leftNode); err != nil { // A
 			return err
 		}
-		generatingCode = append(generatingCode, "pop rax\n")
-		generatingCode = append(generatingCode, "cmp rax, 0\n")
-		generatingCode = append(generatingCode, fmt.Sprintf("je  .Lend%d\n", nowJumpLabel))
-		if err := genCode(node.rightNode); err != nil { // B
+		cm.AddCode("pop rax")
+		cm.AddCode("cmp rax, 0")
+		cm.AddCode("je  .Lend%d", nowJumpLabel)
+		if err := cm.genCode(node.rightNode); err != nil { // B
 			return err
 		}
-		generatingCode = append(generatingCode, fmt.Sprintf("jmp .Lbegin%d\n", nowJumpLabel))
-		generatingCode = append(generatingCode, fmt.Sprintf(".Lend%d:\n", nowJumpLabel))
+		cm.AddCode("jmp .Lbegin%d", nowJumpLabel)
+		cm.AddCode(".Lend%d:", nowJumpLabel)
 		return
 	case ND_FOR:
 		// for (A; B; C) D
-		jumpLabel++
+		cm.AddJumpLabel(1)
 		A := node.leftNode.leftNode
 		B := node.leftNode.rightNode
 		C := node.rightNode.leftNode
 		D := node.rightNode.rightNode
 
-		if err := genCode(A); err != nil {
+		if err := cm.genCode(A); err != nil {
 			return err
 		}
-		generatingCode = append(generatingCode, fmt.Sprintf(".Lbegin%d:\n", nowJumpLabel))
-		if err := genCode(B); err != nil {
+		cm.AddCode(".Lbegin%d:", nowJumpLabel)
+		if err := cm.genCode(B); err != nil {
 			return err
 		}
-		generatingCode = append(generatingCode, "pop rax\n")
-		generatingCode = append(generatingCode, "cmp rax, 0\n")
-		generatingCode = append(generatingCode, fmt.Sprintf("je  .Lend%d\n", nowJumpLabel))
-		if err := genCode(D); err != nil {
+		cm.AddCode("pop rax")
+		cm.AddCode("cmp rax, 0")
+		cm.AddCode("je  .Lend%d", nowJumpLabel)
+		if err := cm.genCode(D); err != nil {
 			return err
 		}
-		if err := genCode(C); err != nil {
+		if err := cm.genCode(C); err != nil {
 			return err
 		}
-		generatingCode = append(generatingCode, fmt.Sprintf("jmp .Lbegin%d\n", nowJumpLabel))
-		generatingCode = append(generatingCode, fmt.Sprintf(".Lend%d:\n", nowJumpLabel))
+		cm.AddCode("jmp .Lbegin%d", nowJumpLabel)
+		cm.AddCode(".Lend%d:", nowJumpLabel)
 		return
 	case ND_BLOCK:
 		// { stmt* }
 		stmtNodeList := node.value.([]*abstSyntaxNode)
 		for _, nowNode := range stmtNodeList {
-			if err := genCode(nowNode); err != nil {
+			if err := cm.genCode(nowNode); err != nil {
 				return err
 			}
 		}
 		return
 	case ND_FUNDEF:
 		funcName := node.value.(string)
-		generatingCode = append(generatingCode, fmt.Sprintf("%s:\n", funcName))
+		cm.AddCode("%s:", funcName)
 
 		// この変数が何変数関数か調べる
 		var argsNum int = 0
@@ -219,15 +223,15 @@ func genCode(node *abstSyntaxNode) (err error) {
 			argsNum = len(argsNode.value.([]*abstSyntaxNode))
 		}
 
-		genCodePrologue(funcName, argsNum)
-		if err := genCode(node.rightNode); err != nil {
+		cm.genCodePrologue(funcName, argsNum)
+		if err := cm.genCode(node.rightNode); err != nil {
 			return err
 		}
 		return
 	case ND_FUNDEF_ARGS:
 		argsNodes := node.value.([]*abstSyntaxNode)
 		for _, v := range argsNodes {
-			if err := genCode(v); err != nil { // 変数を定義する
+			if err := cm.genCode(v); err != nil { // 変数を定義する
 				return err
 			}
 		}
@@ -239,36 +243,35 @@ func genCode(node *abstSyntaxNode) (err error) {
 		// ND_FUNCALL_ARGS
 		argsNode := node.leftNode.value.([]*abstSyntaxNode)
 		for i, v := range argsNode {
-			if err := genCode(v); err != nil {
+			if err := cm.genCode(v); err != nil {
 				return err
 			}
-			generatingCode = append(generatingCode, fmt.Sprintf("pop %s\n", argsRegisterName[i]))
+			cm.AddCode("pop %s", argsRegisterName[i])
 		}
 		// rsp を 16の倍数にする調整
-		jumpLabel++
-
-		generatingCode = append(generatingCode, "mov rax, rsp\n")
-		generatingCode = append(generatingCode, "and rax, 15\n")                          // 下4bitのみにマスキング
-		generatingCode = append(generatingCode, fmt.Sprintf("jnz .Lcall%d\n", jumpLabel)) // 下4bit != 0
-		generatingCode = append(generatingCode, "mov rax, 0\n")                           // TODO: rax は引数の数
-		generatingCode = append(generatingCode, fmt.Sprintf("call %s\n", funcName))
-		generatingCode = append(generatingCode, fmt.Sprintf("jmp .Lend%d\n", jumpLabel))
-		generatingCode = append(generatingCode, fmt.Sprintf(".Lcall%d:\n", jumpLabel)) // 16の倍数になっていなくて、8ずらすときはここから
-		generatingCode = append(generatingCode, "sub rsp, 8\n")
-		generatingCode = append(generatingCode, "mov rax, 0\n") // TODO: rax は引数の数
-		generatingCode = append(generatingCode, fmt.Sprintf("call %s\n", funcName))
-		generatingCode = append(generatingCode, "add rsp, 8\n")
-		generatingCode = append(generatingCode, fmt.Sprintf(".Lend%d:\n", jumpLabel))
-		generatingCode = append(generatingCode, "push rax\n")
+		cm.AddJumpLabel(1)
+		cm.AddCode("mov rax, rsp")
+		cm.AddCode("and rax, 15")                // 下4bitのみにマスキング
+		cm.AddCode("jnz .Lcall%d", cm.jumpLabel) // 下4bit != 0
+		cm.AddCode("mov rax, 0")                 // TODO: rax は引数の数
+		cm.AddCode("call %s", funcName)
+		cm.AddCode("jmp .Lend%d", cm.jumpLabel)
+		cm.AddCode(".Lcall%d:", cm.jumpLabel) // 16の倍数になっていなくて、8ずらすときはここから
+		cm.AddCode("sub rsp, 8")
+		cm.AddCode("mov rax, 0") // TODO: rax は引数の数
+		cm.AddCode("call %s", funcName)
+		cm.AddCode("add rsp, 8")
+		cm.AddCode(".Lend%d:", cm.jumpLabel)
+		cm.AddCode("push rax")
 		return
 	}
 
 	// 二項演算系
 
-	if err := genCode(node.leftNode); err != nil {
+	if err := cm.genCode(node.leftNode); err != nil {
 		return err
 	}
-	if err := genCode(node.rightNode); err != nil {
+	if err := cm.genCode(node.rightNode); err != nil {
 		return err
 	}
 
@@ -294,68 +297,52 @@ func genCode(node *abstSyntaxNode) (err error) {
 	// ADD と SUB はポインタ加減算があるので先に処理
 
 	if node.nodeKind == ND_ADD || node.nodeKind == ND_SUB {
-		generatingCode = append(generatingCode, "pop rdi\n") // right node
-		generatingCode = append(generatingCode, "pop rax\n") // left node
+		cm.AddCode("pop rdi") // right node
+		cm.AddCode("pop rax") // left node
 		if existsPointer == 2 {
-			generatingCode = append(generatingCode, "imul rdi, 8\n") // right node
+			cm.AddCode("imul rdi, 8") // right node
 		}
 		if existsPointer == 1 {
-			generatingCode = append(generatingCode, "imul rax, 8\n") // left node
+			cm.AddCode("imul rax, 8") // left node
 		}
 
 		if node.nodeKind == ND_ADD {
-			generatingCode = append(generatingCode, "add rax, rdi\n")
+			cm.AddCode("add rax, rdi") // right node
 		} else {
 			// ND_SUB
-			generatingCode = append(generatingCode, "sub rax, rdi\n")
+			cm.AddCode("sub rax, rdi") // right node
 		}
-		generatingCode = append(generatingCode, "push rax\n")
+		cm.AddCode("push rax") // right node
 		return nil
 	}
 
-	generatingCode = append(generatingCode, "pop rdi\n")
-	generatingCode = append(generatingCode, "pop rax\n")
+	cm.AddCode("pop rdi")
+	cm.AddCode("pop rax")
 
 	switch node.nodeKind {
 	case ND_MUL:
-		generatingCode = append(generatingCode, "imul rax, rdi\n")
+		cm.AddCode("imul rax, rdi")
 	case ND_DIV:
-		generatingCode = append(generatingCode, "cqo\n")
-		generatingCode = append(generatingCode, "idiv rdi\n")
+		cm.AddCode("cqo")
+		cm.AddCode("idiv rdi")
 	case ND_COMP:
-		generatingCode = append(generatingCode, "cmp rax, rdi\n")
-		generatingCode = append(generatingCode, "sete al\n")
-		generatingCode = append(generatingCode, "movzb rax, al\n")
+		cm.AddCode("cmp rax, rdi")
+		cm.AddCode("sete al")
+		cm.AddCode("movzb rax, al")
 	case ND_NOTEQ:
-		generatingCode = append(generatingCode, "cmp rax, rdi\n")
-		generatingCode = append(generatingCode, "setne al\n")
-		generatingCode = append(generatingCode, "movzb rax, al\n")
+		cm.AddCode("cmp rax, rdi")
+		cm.AddCode("setne al")
+		cm.AddCode("movzb rax, al")
 	case ND_LT:
-		generatingCode = append(generatingCode, "cmp rax, rdi\n")
-		generatingCode = append(generatingCode, "setl al\n")
-		generatingCode = append(generatingCode, "movzb rax, al\n")
+		cm.AddCode("cmp rax, rdi")
+		cm.AddCode("setl al")
+		cm.AddCode("movzb rax, al")
 	case ND_LTQ:
-		generatingCode = append(generatingCode, "cmp rax, rdi\n")
-		generatingCode = append(generatingCode, "setle al\n")
-		generatingCode = append(generatingCode, "movzb rax, al\n")
+		cm.AddCode("cmp rax, rdi")
+		cm.AddCode("setle al")
+		cm.AddCode("movzb rax, al")
 	}
 
-	generatingCode = append(generatingCode, "push rax\n")
+	cm.AddCode("push rax")
 	return nil
-}
-
-func GenAssembleMain(nodes []*abstSyntaxNode) (codes []string, err error) {
-	genInitCode()
-	for _, node := range nodes {
-		if err := genCode(node); err != nil {
-			return nil, err
-		}
-
-		// 各式の計算結果をスタックからraxにpop
-		if NoMain {
-			generatingCode = append(generatingCode, "pop rax\n")
-		}
-	}
-	genEndCode()
-	return generatingCode, nil
 }

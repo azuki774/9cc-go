@@ -120,9 +120,9 @@ func getSizeOf(node *abstSyntaxNode) (size int, err error) {
 	return 0, nil
 }
 
-func ParserMain(tokens []Token) (nodes []*abstSyntaxNode, err error) {
+func ParserMain(tokens []Token, noMain bool) (nodes []*abstSyntaxNode, err error) {
 	ts = newTokenStream(tokens)
-	if !NoMain {
+	if !noMain {
 		nodes, err = Expr_program(ts)
 	} else {
 		nodes, err = Expr_programNoMain(ts)
