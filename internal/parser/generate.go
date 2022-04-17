@@ -279,13 +279,13 @@ func (cm *CodeManager) genCode(node *abstSyntaxNode) (err error) {
 	existsPointer := 0
 	// 0 なら存在しない、1なら左辺、2なら右辺、3は両辺 (Error)
 	if node.leftNode.nodeKind == ND_LVAR {
-		if node.leftNode.value.(variable).kind == TypePtr {
+		if node.leftNode.value.(variable).kind.primKind == TypePtr {
 			existsPointer += 1
 		}
 	}
 
 	if node.rightNode.nodeKind == ND_LVAR {
-		if node.rightNode.value.(variable).kind == TypePtr {
+		if node.rightNode.value.(variable).kind.primKind == TypePtr {
 			existsPointer += 2
 		}
 	}

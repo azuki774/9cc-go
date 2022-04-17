@@ -475,6 +475,7 @@ func Expr_unary() (node *abstSyntaxNode, err error) {
 		if err != nil {
 			return nil, err
 		}
+		fmt.Println(e)
 		// e を見て sizeof e を評価してしまう
 		size, err := getSizeOf(e)
 		node = makeNewAbstSyntaxNode(ND_NUM, nil, nil, size)
@@ -573,11 +574,12 @@ func expr_defVar() (node *abstSyntaxNode, err error) {
 	ts.nextToken() // 変数名
 
 	var nvar variable
-	if pointerCount == 0 {
-		nvar, err = localVar.add(varName, TypeInt)
-	} else {
-		nvar, err = localVar.add(varName, TypePtr)
-	}
+	nvar, err = localVar.add(varName, makeTypeKind(TypeInt, pointerCount))
+	// if pointerCount == 0 {
+	// 	nvar, err = localVar.add(varName, TypeInt)
+	// } else {
+	// 	nvar, err = localVar.add(varName, TypePtr)
+	// }
 
 	if err != nil {
 		return nil, err

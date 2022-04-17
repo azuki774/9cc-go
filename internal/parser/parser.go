@@ -37,11 +37,16 @@ const (
 	ND_FUNDEF_ARGS  = NodeKind("ND_FUNDEF_ARGS")  // value に args の node のスライスを詰める
 )
 
-type TypeKind string
+type TypeKind struct {
+	primKind TypePrimKind
+	ptrTo    *TypeKind
+}
+
+type TypePrimKind string
 
 const (
-	TypeInt = TypeKind("int")
-	TypePtr = TypeKind("pointer")
+	TypeInt = TypePrimKind("int")
+	TypePtr = TypePrimKind("pointer")
 
 	PointerSize = 8
 )
@@ -53,7 +58,6 @@ type variableManager struct {
 
 type variable struct {
 	kind   TypeKind
-	ptrTo  *variable
 	offset int
 }
 
@@ -72,6 +76,20 @@ func makeNewVariableManager() *variableManager {
 	return &variableManager{varList: map[string]variable{}, nextoffset: 8}
 }
 
+// (*n)TypePrimKind 型を作成する。
+func makeTypeKind(tpk TypePrimKind, n int) (typeKind TypeKind) {
+	ty0 := TypeKind{primKind: TypeInt, ptrTo: nil}
+	if n == 0 {
+		return ty0
+	}
+	ty := []TypeKind{ty0}
+	for i := 0; i < n; i++ {
+		tyn := TypeKind{primKind: TypePtr, ptrTo: &ty[i]}
+		ty = append(ty, tyn)
+	}
+	return ty[n]
+}
+
 func (v *variableManager) reset() {
 	v.varList = map[string]variable{}
 	v.nextoffset = 8
@@ -84,15 +102,8 @@ func (v *variableManager) add(varname string, kind TypeKind) (nvar variable, err
 		return variable{}, fmt.Errorf("%s is already defined", varname)
 	} else {
 		// 変数が未定義 -> 追加
-		switch kind {
-		case TypeInt:
-			nvar = variable{kind: TypeInt, ptrTo: nil, offset: v.nextoffset}
-			v.nextoffset += 8
-		case TypePtr:
-			nvar = variable{kind: TypePtr, ptrTo: nil, offset: v.nextoffset}
-			v.nextoffset += 8
-		}
-
+		nvar = variable{kind: kind, offset: v.nextoffset}
+		v.nextoffset += 8
 	}
 
 	v.varList[varname] = nvar
@@ -105,13 +116,13 @@ func getSizeOf(node *abstSyntaxNode) (size int, err error) {
 		return 4, nil
 	case ND_LVAR:
 		nvar := node.value.(variable)
-		switch nvar.kind {
+		switch nvar.kind.primKind {
 		case TypeInt:
 			return 4, nil
 		case TypePtr:
 			return 8, nil
 		default:
-			return 0, fmt.Errorf("getSizeOf: %s is not implemented", string(nvar.kind))
+			return 0, fmt.Errorf("getSizeOf: %s is not implemented", string(nvar.kind.primKind))
 		}
 	default:
 		return 0, fmt.Errorf("getSizeOf: %s is not a valid type", string(node.nodeKind))

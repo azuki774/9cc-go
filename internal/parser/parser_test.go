@@ -60,8 +60,8 @@ func Test_variableManager_add(t *testing.T) {
 		{
 			name:     "test1",
 			v:        &v1,
-			args:     args{varname: "a", kind: TypeInt},
-			wantNvar: variable{kind: TypeInt, ptrTo: nil, offset: 8},
+			args:     args{varname: "a", kind: makeTypeKind(TypeInt, 0)},
+			wantNvar: variable{kind: makeTypeKind(TypeInt, 0), offset: 8},
 			wantErr:  false,
 		},
 	}
@@ -81,8 +81,8 @@ func Test_variableManager_add(t *testing.T) {
 
 func Test_getSizeOf(t *testing.T) {
 	n1 := makeNewAbstSyntaxNode(ND_NUM, nil, nil, 12345)
-	n2 := makeNewAbstSyntaxNode(ND_LVAR, nil, nil, variable{kind: TypeInt})
-	n3 := makeNewAbstSyntaxNode(ND_LVAR, nil, nil, variable{kind: TypePtr})
+	n2 := makeNewAbstSyntaxNode(ND_LVAR, nil, nil, variable{kind: TypeKind{primKind: TypeInt}})
+	n3 := makeNewAbstSyntaxNode(ND_LVAR, nil, nil, variable{kind: TypeKind{primKind: TypePtr}})
 	type args struct {
 		node *abstSyntaxNode
 	}
