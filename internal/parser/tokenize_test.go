@@ -89,6 +89,7 @@ func Test_getNextToken(t *testing.T) {
 	ss26 := newStringStream(",abcd")
 	ss27 := newStringStream("&abcd")
 	ss28 := newStringStream("*x")
+	ss29 := newStringStream("sizeof(x)")
 	type args struct {
 		ss *stringStream
 	}
@@ -107,37 +108,37 @@ func Test_getNextToken(t *testing.T) {
 		{
 			name:      "plus",
 			args:      args{ss: ss2},
-			wantToken: Token{kind: TK_SYMBOL_ADD},
+			wantToken: Token{kind: TK_ADD},
 			wantErr:   false,
 		},
 		{
 			name:      "minus",
 			args:      args{ss: ss3},
-			wantToken: Token{kind: TK_SYMBOL_SUB},
+			wantToken: Token{kind: TK_SUB},
 			wantErr:   false,
 		},
 		{
 			name:      "mul",
 			args:      args{ss: ss4},
-			wantToken: Token{kind: TK_SYMBOL_MUL},
+			wantToken: Token{kind: TK_MUL},
 			wantErr:   false,
 		},
 		{
 			name:      "div",
 			args:      args{ss: ss5},
-			wantToken: Token{kind: TK_SYMBOL_DIV},
+			wantToken: Token{kind: TK_DIV},
 			wantErr:   false,
 		},
 		{
 			name:      "left (",
 			args:      args{ss: ss6},
-			wantToken: Token{kind: TK_SYMBOL_LEFTPAT},
+			wantToken: Token{kind: TK_LEFTPAT},
 			wantErr:   false,
 		},
 		{
 			name:      "right )",
 			args:      args{ss: ss7},
-			wantToken: Token{kind: TK_SYMBOL_RIGHTPAT},
+			wantToken: Token{kind: TK_RIGHTPAT},
 			wantErr:   false,
 		},
 		{
@@ -257,13 +258,19 @@ func Test_getNextToken(t *testing.T) {
 		{
 			name:      "&",
 			args:      args{ss: ss27},
-			wantToken: Token{kind: TK_SYMBOL_AND},
+			wantToken: Token{kind: TK_AND},
 			wantErr:   false,
 		},
 		{
 			name:      "*x",
 			args:      args{ss: ss28},
-			wantToken: Token{kind: TK_SYMBOL_MUL},
+			wantToken: Token{kind: TK_MUL},
+			wantErr:   false,
+		},
+		{
+			name:      "sizeof",
+			args:      args{ss: ss29},
+			wantToken: Token{kind: TK_SIZEOF},
 			wantErr:   false,
 		},
 	}

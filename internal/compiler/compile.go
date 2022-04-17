@@ -13,7 +13,7 @@ var (
 	OutputFile *os.File
 )
 
-func CompileMain(OutputFileName string, SourceFileName string, showTokenize bool) (err error) {
+func CompileMain(OutputFileName string, SourceFileName string, noMain bool, showTokenize bool) (err error) {
 	b, err := ioutil.ReadFile(SourceFileName)
 	defer SourceFile.Close()
 	if err != nil {
@@ -35,12 +35,12 @@ func CompileMain(OutputFileName string, SourceFileName string, showTokenize bool
 			fmt.Printf("%s\n", token.ShowString())
 		}
 	}
-	topNode, err := parser.ParserMain(tokens)
+	topNode, err := parser.ParserMain(tokens, noMain)
 	if err != nil {
 		return err
 	}
 
-	codes, _ := parser.GenAssembleMain(topNode)
+	codes, _ := parser.GenAssembleMain(topNode, noMain)
 
 	err = stringsWriter(OutputFile, codes)
 	if err != nil {

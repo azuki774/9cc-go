@@ -1,9 +1,10 @@
 int main(){
+    int **pp;
     int *p;
-    int q;
-    malloc4(p);
-    q = *p;
-    showInt(q);
-    return 0;
+    int a = 100;
+
+    pp = &p;
+    p = &a;
+    showInt(**pp);
 }
 

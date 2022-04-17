@@ -9,7 +9,6 @@ import (
 	"os"
 
 	"github.com/azuki774/9cc-go/internal/compiler"
-	"github.com/azuki774/9cc-go/internal/parser"
 	"github.com/spf13/cobra"
 )
 
@@ -47,11 +46,7 @@ to quickly create a Cobra application.`,
 			return err
 		}
 
-		if nmain {
-			parser.NoMain = true
-		}
-
-		err = compiler.CompileMain(OutputFileName, SourceFileName, stf)
+		err = compiler.CompileMain(OutputFileName, SourceFileName, nmain, stf)
 		return err
 	},
 }

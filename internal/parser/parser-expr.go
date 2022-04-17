@@ -33,7 +33,7 @@ func Expr_program(ts *tokenStream) (nodes []*abstSyntaxNode, err error) {
 				if ts.nextPeekToken().kind == TK_COMMA {
 					ts.nextToken() // ,
 				}
-				if ts.nextPeekToken().kind == TK_SYMBOL_RIGHTPAT {
+				if ts.nextPeekToken().kind == TK_RIGHTPAT {
 					break
 				}
 				newVarNode, err := Expr_primary() // 変数定義node
@@ -89,8 +89,8 @@ func Expr_stmt() (node *abstSyntaxNode, err error) {
 		}
 		node = makeNewAbstSyntaxNode(ND_RETURN, e, nil, nil)
 	case TK_IF:
-		ts.nextToken()                                               // if
-		err = ts.nextExpectReadToken(Token{kind: TK_SYMBOL_LEFTPAT}) // (
+		ts.nextToken()                                        // if
+		err = ts.nextExpectReadToken(Token{kind: TK_LEFTPAT}) // (
 		if err != nil {
 			return nil, err
 		}
@@ -100,7 +100,7 @@ func Expr_stmt() (node *abstSyntaxNode, err error) {
 			return nil, err
 		}
 
-		err = ts.nextExpectReadToken(Token{kind: TK_SYMBOL_RIGHTPAT}) // )
+		err = ts.nextExpectReadToken(Token{kind: TK_RIGHTPAT}) // )
 		if err != nil {
 			return nil, err
 		}
@@ -126,7 +126,7 @@ func Expr_stmt() (node *abstSyntaxNode, err error) {
 	case TK_WHILE:
 		// "while" "(" expr ")" stmt
 		ts.nextToken() // while
-		err = ts.nextExpectReadToken(Token{kind: TK_SYMBOL_LEFTPAT})
+		err = ts.nextExpectReadToken(Token{kind: TK_LEFTPAT})
 		if err != nil {
 			return nil, err
 		}
@@ -136,7 +136,7 @@ func Expr_stmt() (node *abstSyntaxNode, err error) {
 			return nil, err
 		}
 
-		err = ts.nextExpectReadToken(Token{kind: TK_SYMBOL_RIGHTPAT})
+		err = ts.nextExpectReadToken(Token{kind: TK_RIGHTPAT})
 		if err != nil {
 			return nil, err
 		}
@@ -153,7 +153,7 @@ func Expr_stmt() (node *abstSyntaxNode, err error) {
 		// for (A; B; C) D
 
 		ts.nextToken() // for
-		err = ts.nextExpectReadToken(Token{kind: TK_SYMBOL_LEFTPAT})
+		err = ts.nextExpectReadToken(Token{kind: TK_LEFTPAT})
 		if err != nil {
 			return nil, err
 		}
@@ -187,14 +187,14 @@ func Expr_stmt() (node *abstSyntaxNode, err error) {
 		}
 
 		// C
-		if ts.nextPeekToken().kind != TK_SYMBOL_RIGHTPAT {
+		if ts.nextPeekToken().kind != TK_RIGHTPAT {
 			eC, err = Expr_expr()
 			if err != nil {
 				return nil, err
 			}
 		}
 
-		err = ts.nextExpectReadToken(Token{kind: TK_SYMBOL_RIGHTPAT})
+		err = ts.nextExpectReadToken(Token{kind: TK_RIGHTPAT})
 		if err != nil {
 			return nil, err
 		}
@@ -372,28 +372,25 @@ func Expr_add() (node *abstSyntaxNode, err error) {
 	// + か - があるとき
 	for {
 		nToken := ts.nextPeekToken()
-		switch nToken.kind {
-		case TK_SYMBOL_ADD:
-			ts.nextToken()
+		if nToken.kind == TK_ADD || nToken.kind == TK_SUB {
+			// node + e or node - e
+			ts.nextToken() // + or -
 			e, err := Expr_mul()
 			if err != nil {
 				return nil, err
 			}
-			node = makeNewAbstSyntaxNode(ND_ADD, node, e, nil)
-			continue
-		case TK_SYMBOL_SUB:
-			ts.nextToken()
-			e, err := Expr_mul()
-			if err != nil {
-				return nil, err
-			}
-			node = makeNewAbstSyntaxNode(ND_SUB, node, e, nil)
-			continue
-		}
 
-		// + Token でも - Token でもないとき
-		break
+			if nToken.kind == TK_ADD {
+				node = makeNewAbstSyntaxNode(ND_ADD, node, e, nil)
+			} else if nToken.kind == TK_SUB {
+				node = makeNewAbstSyntaxNode(ND_SUB, node, e, nil)
+			}
+		} else {
+			// + Token でも - Token でもないとき
+			break
+		}
 	}
+
 	return node, nil
 }
 
@@ -407,7 +404,7 @@ func Expr_mul() (node *abstSyntaxNode, err error) {
 	for {
 		nToken := ts.nextPeekToken()
 		switch nToken.kind {
-		case TK_SYMBOL_MUL:
+		case TK_MUL:
 			ts.nextToken()
 			e, err := Expr_unary()
 			if err != nil {
@@ -415,7 +412,7 @@ func Expr_mul() (node *abstSyntaxNode, err error) {
 			}
 			node = makeNewAbstSyntaxNode(ND_MUL, node, e, nil)
 			continue
-		case TK_SYMBOL_DIV:
+		case TK_DIV:
 			ts.nextToken()
 			e, err := Expr_unary()
 			if err != nil {
@@ -437,16 +434,17 @@ func Expr_unary() (node *abstSyntaxNode, err error) {
 	// "*" unary
 	// "&" unary
 	// +x -> x, -x -> 0-x
+	// "sizeof" unary
 	nToken := ts.nextPeekToken()
 	switch nToken.kind {
-	case TK_SYMBOL_ADD:
+	case TK_ADD:
 		ts.nextToken() // + を読み飛ばす
 		node, err = Expr_primary()
 		if err != nil {
 			return nil, err
 		}
 		return node, nil
-	case TK_SYMBOL_SUB:
+	case TK_SUB:
 		ts.nextToken()
 		leftNode := makeNewAbstSyntaxNode(ND_NUM, nil, nil, 0)
 		e, err := Expr_primary()
@@ -455,7 +453,7 @@ func Expr_unary() (node *abstSyntaxNode, err error) {
 		}
 		node = makeNewAbstSyntaxNode(ND_SUB, leftNode, e, nil) // "0 -" x に対応
 		return node, nil
-	case TK_SYMBOL_MUL: // DEREF
+	case TK_MUL: // DEREF
 		ts.nextToken()
 		e, err := Expr_unary()
 		if err != nil {
@@ -463,13 +461,24 @@ func Expr_unary() (node *abstSyntaxNode, err error) {
 		}
 		node = makeNewAbstSyntaxNode(ND_DEREF, e, nil, nil) // *e
 		return node, nil
-	case TK_SYMBOL_AND: // ADDR
+	case TK_AND: // ADDR
 		ts.nextToken()
 		e, err := Expr_unary()
 		if err != nil {
 			return nil, err
 		}
 		node = makeNewAbstSyntaxNode(ND_ADDR, e, nil, nil) // &e
+		return node, nil
+	case TK_SIZEOF:
+		ts.nextToken()
+		e, err := Expr_unary()
+		if err != nil {
+			return nil, err
+		}
+		fmt.Println(e)
+		// e を見て sizeof e を評価してしまう
+		size, err := getSizeOf(e)
+		node = makeNewAbstSyntaxNode(ND_NUM, nil, nil, size)
 		return node, nil
 	}
 
@@ -486,13 +495,13 @@ func Expr_primary() (node *abstSyntaxNode, err error) {
 	// primary = num | ident | "(" expr ")"
 	nToken := ts.nextPeekToken()
 	switch nToken.kind {
-	case TK_SYMBOL_LEFTPAT: // ( expr )
+	case TK_LEFTPAT: // ( expr )
 		ts.nextToken() // (
 		node, err = Expr_expr()
 		if err != nil {
 			return nil, err
 		}
-		err = ts.nextExpectReadToken(Token{kind: TK_SYMBOL_RIGHTPAT}) // )
+		err = ts.nextExpectReadToken(Token{kind: TK_RIGHTPAT}) // )
 		if err != nil {
 			return nil, err
 		}
@@ -510,7 +519,7 @@ func Expr_primary() (node *abstSyntaxNode, err error) {
 			return node, nil
 		}
 
-		if ts.nextPeekToken().kind == TK_SYMBOL_MUL {
+		if ts.nextPeekToken().kind == TK_MUL {
 			// 変数評価 (*type)
 			node, err = expr_evalVar()
 			if err != nil {
@@ -521,7 +530,7 @@ func Expr_primary() (node *abstSyntaxNode, err error) {
 
 		ts.nextToken() // 一旦変数名を読み捨てる
 
-		if ts.nextPeekToken().kind != TK_SYMBOL_LEFTPAT {
+		if ts.nextPeekToken().kind != TK_LEFTPAT {
 			// 変数評価
 			ts.backToken()
 			node, err = expr_evalVar()
@@ -546,14 +555,14 @@ func Expr_primary() (node *abstSyntaxNode, err error) {
 
 func expr_defVar() (node *abstSyntaxNode, err error) {
 	ts.nextToken() // int
-	if ts.nextPeekToken().kind != TK_IDENT && ts.nextPeekToken().kind != TK_SYMBOL_MUL {
+	if ts.nextPeekToken().kind != TK_IDENT && ts.nextPeekToken().kind != TK_MUL {
 		return nil, fmt.Errorf("Expr_primary: variable name error")
 	}
 
 	// ポインタの*のTokenの数を計算
 	pointerCount := 0
 	for {
-		if ts.nextPeekToken().kind == TK_SYMBOL_MUL {
+		if ts.nextPeekToken().kind == TK_MUL {
 			ts.nextToken() // *
 			pointerCount += 1
 		} else {
@@ -565,11 +574,12 @@ func expr_defVar() (node *abstSyntaxNode, err error) {
 	ts.nextToken() // 変数名
 
 	var nvar variable
-	if pointerCount == 0 {
-		nvar, err = localVar.add(varName, TypeInt)
-	} else {
-		nvar, err = localVar.add(varName, TypePtr)
-	}
+	nvar, err = localVar.add(varName, makeTypeKind(TypeInt, pointerCount))
+	// if pointerCount == 0 {
+	// 	nvar, err = localVar.add(varName, TypeInt)
+	// } else {
+	// 	nvar, err = localVar.add(varName, TypePtr)
+	// }
 
 	if err != nil {
 		return nil, err
@@ -589,7 +599,7 @@ func expr_evalFunc() (node *abstSyntaxNode, err error) {
 		if ts.nextPeekToken().kind == TK_COMMA {
 			ts.nextToken() // ,
 		}
-		if ts.nextPeekToken().kind == TK_SYMBOL_RIGHTPAT {
+		if ts.nextPeekToken().kind == TK_RIGHTPAT {
 			break
 		}
 		newVarNode, err := Expr_add() // 変数定義node

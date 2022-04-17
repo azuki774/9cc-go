@@ -134,17 +134,17 @@ func Test_tokenStream_ok(t *testing.T) {
 	}{
 		{
 			name:   "test1",
-			fields: fields{tokens: []Token{{kind: TK_SYMBOL_LEFTPAT}, {kind: TK_NUM, value: 123}, {kind: TK_SYMBOL_RIGHTPAT}, {kind: TK_EOF}}, index: 0},
+			fields: fields{tokens: []Token{{kind: TK_LEFTPAT}, {kind: TK_NUM, value: 123}, {kind: TK_RIGHTPAT}, {kind: TK_EOF}}, index: 0},
 			want:   true,
 		},
 		{
 			name:   "test2",
-			fields: fields{tokens: []Token{{kind: TK_SYMBOL_LEFTPAT}, {kind: TK_NUM, value: 123}, {kind: TK_SYMBOL_RIGHTPAT}, {kind: TK_EOF}}, index: 1},
+			fields: fields{tokens: []Token{{kind: TK_LEFTPAT}, {kind: TK_NUM, value: 123}, {kind: TK_RIGHTPAT}, {kind: TK_EOF}}, index: 1},
 			want:   true,
 		},
 		{
 			name:   "test3",
-			fields: fields{tokens: []Token{{kind: TK_SYMBOL_LEFTPAT}, {kind: TK_NUM, value: 123}, {kind: TK_SYMBOL_RIGHTPAT}, {kind: TK_EOF}}, index: 3},
+			fields: fields{tokens: []Token{{kind: TK_LEFTPAT}, {kind: TK_NUM, value: 123}, {kind: TK_RIGHTPAT}, {kind: TK_EOF}}, index: 3},
 			want:   false,
 		},
 	}
@@ -173,17 +173,17 @@ func Test_tokenStream_nextToken(t *testing.T) {
 	}{
 		{
 			name:   "test1",
-			fields: fields{tokens: []Token{{kind: TK_SYMBOL_LEFTPAT}, {kind: TK_NUM, value: 123}, {kind: TK_SYMBOL_RIGHTPAT}, {kind: TK_EOF}}, index: 0},
-			wantTk: Token{kind: TK_SYMBOL_LEFTPAT},
+			fields: fields{tokens: []Token{{kind: TK_LEFTPAT}, {kind: TK_NUM, value: 123}, {kind: TK_RIGHTPAT}, {kind: TK_EOF}}, index: 0},
+			wantTk: Token{kind: TK_LEFTPAT},
 		},
 		{
 			name:   "test2",
-			fields: fields{tokens: []Token{{kind: TK_SYMBOL_LEFTPAT}, {kind: TK_NUM, value: 123}, {kind: TK_SYMBOL_RIGHTPAT}, {kind: TK_EOF}}, index: 1},
+			fields: fields{tokens: []Token{{kind: TK_LEFTPAT}, {kind: TK_NUM, value: 123}, {kind: TK_RIGHTPAT}, {kind: TK_EOF}}, index: 1},
 			wantTk: Token{kind: TK_NUM, value: 123},
 		},
 		{
 			name:   "test3",
-			fields: fields{tokens: []Token{{kind: TK_SYMBOL_LEFTPAT}, {kind: TK_NUM, value: 123}, {kind: TK_SYMBOL_RIGHTPAT}, {kind: TK_EOF}}, index: 3},
+			fields: fields{tokens: []Token{{kind: TK_LEFTPAT}, {kind: TK_NUM, value: 123}, {kind: TK_RIGHTPAT}, {kind: TK_EOF}}, index: 3},
 			wantTk: Token{kind: TK_EOF},
 		},
 	}
@@ -212,17 +212,17 @@ func Test_tokenStream_nextPeekToken(t *testing.T) {
 	}{
 		{
 			name:   "test1",
-			fields: fields{tokens: []Token{{kind: TK_SYMBOL_LEFTPAT}, {kind: TK_NUM, value: 123}, {kind: TK_SYMBOL_RIGHTPAT}, {kind: TK_EOF}}, index: 0},
-			wantTk: Token{kind: TK_SYMBOL_LEFTPAT},
+			fields: fields{tokens: []Token{{kind: TK_LEFTPAT}, {kind: TK_NUM, value: 123}, {kind: TK_RIGHTPAT}, {kind: TK_EOF}}, index: 0},
+			wantTk: Token{kind: TK_LEFTPAT},
 		},
 		{
 			name:   "test2",
-			fields: fields{tokens: []Token{{kind: TK_SYMBOL_LEFTPAT}, {kind: TK_NUM, value: 123}, {kind: TK_SYMBOL_RIGHTPAT}, {kind: TK_EOF}}, index: 1},
+			fields: fields{tokens: []Token{{kind: TK_LEFTPAT}, {kind: TK_NUM, value: 123}, {kind: TK_RIGHTPAT}, {kind: TK_EOF}}, index: 1},
 			wantTk: Token{kind: TK_NUM, value: 123},
 		},
 		{
 			name:   "test3",
-			fields: fields{tokens: []Token{{kind: TK_SYMBOL_LEFTPAT}, {kind: TK_NUM, value: 123}, {kind: TK_SYMBOL_RIGHTPAT}, {kind: TK_EOF}}, index: 3},
+			fields: fields{tokens: []Token{{kind: TK_LEFTPAT}, {kind: TK_NUM, value: 123}, {kind: TK_RIGHTPAT}, {kind: TK_EOF}}, index: 3},
 			wantTk: Token{kind: TK_EOF},
 		},
 	}

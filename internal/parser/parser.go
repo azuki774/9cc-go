@@ -6,40 +6,50 @@ var (
 	ts *tokenStream
 )
 
-var (
-	ND_UNDEFINED    = 0
-	ND_NIL          = 1 // nil (no code)
-	ND_NUM          = 10
-	ND_ADD          = 11
-	ND_SUB          = 12
-	ND_MUL          = 13
-	ND_DIV          = 14
-	ND_COMP         = 21 // ==
-	ND_NOTEQ        = 22 // !=
-	ND_LT           = 23 // <
-	ND_LTQ          = 24 // <=
-	ND_EQ           = 25 // =
-	ND_ADDR         = 26 // &hoge
-	ND_DEREF        = 27 // *hoge
-	ND_LVAR         = 31 // local variable, value に struct Var
-	ND_RETURN       = 41
-	ND_IF           = 42
-	ND_ELSE         = 43
-	ND_IFELSE       = 44 // elseありのIF
-	ND_WHILE        = 45
-	ND_FOR          = 46
-	ND_BLOCK        = 47 // { stmt* } : value に stmt* に含まれるabstSyntaxNode のスライス
-	ND_FUNCALL      = 48 // value に呼び出す関数名、leftNode に ND_FUNCALL_ARG
-	ND_FUNCALL_ARGS = 49 // value に引数たちの abstSyntaxNode のスライス
-	ND_FUNDEF       = 50 // value に関数名、leftNode に ND_FUNDEF_ARGS, rightNode に 関数のstmt
-	ND_FUNDEF_ARGS  = 51 // value に args の node のスライスを詰める
-)
-
-type TypeKind string
+type NodeKind string
 
 const (
-	TypeInt = TypeKind("int")
-	TypePtr = TypeKind("pointer")
+	ND_UNDEFINED    = NodeKind("ND_UNDEFINED")
+	ND_NIL          = NodeKind("ND_NIL") // nil (no code)
+	ND_NUM          = NodeKind("ND_NUM")
+	ND_ADD          = NodeKind("ND_ADD")
+	ND_SUB          = NodeKind("ND_SUB")
+	ND_MUL          = NodeKind("ND_MUL")
+	ND_DIV          = NodeKind("ND_DIV")
+	ND_COMP         = NodeKind("ND_COMP")  // ==
+	ND_NOTEQ        = NodeKind("ND_NOTEQ") // !=
+	ND_LT           = NodeKind("ND_LT")    // <
+	ND_LTQ          = NodeKind("ND_LTQ")   // <=
+	ND_EQ           = NodeKind("ND_EQ")    // =
+	ND_ADDR         = NodeKind("ND_ADDR")  // &hoge
+	ND_DEREF        = NodeKind("ND_DEREF") // *hoge
+	ND_LVAR         = NodeKind("ND_LVAR")  // local variable, value に struct Var
+	ND_RETURN       = NodeKind("ND_RETURN")
+	ND_IF           = NodeKind("ND_IF")
+	ND_ELSE         = NodeKind("ND_ELSE")
+	ND_IFELSE       = NodeKind("ND_IFELSE") // elseありのIF
+	ND_WHILE        = NodeKind("ND_WHILE")
+	ND_FOR          = NodeKind("ND_FOR")
+	ND_BLOCK        = NodeKind("ND_BLOCK")        // { stmt* } : value に stmt* に含まれるabstSyntaxNode のスライス
+	ND_FUNCALL      = NodeKind("ND_FUNCALL")      // value に呼び出す関数名、leftNode に ND_FUNCALL_ARG
+	ND_FUNCALL_ARGS = NodeKind("ND_FUNCALL_ARGS") // value に引数たちの abstSyntaxNode のスライス
+	ND_FUNDEF       = NodeKind("ND_FUNDEF")       // value に関数名、leftNode に ND_FUNDEF_ARGS, rightNode に 関数のstmt
+	ND_FUNDEF_ARGS  = NodeKind("ND_FUNDEF_ARGS")  // value に args の node のスライスを詰める
+)
+
+type TypeKind struct {
+	primKind TypePrimKind
+	ptrTo    *TypeKind
+	width    int // この型が必要なbyte数
+}
+
+type TypePrimKind string
+
+const (
+	TypeInt = TypePrimKind("int")
+	TypePtr = TypePrimKind("pointer")
+
+	PointerSize = 8
 )
 
 type variableManager struct {
@@ -49,23 +59,36 @@ type variableManager struct {
 
 type variable struct {
 	kind   TypeKind
-	ptrTo  *variable
 	offset int
 }
 
 type abstSyntaxNode struct {
-	nodeKind  int
+	nodeKind  NodeKind
 	leftNode  *abstSyntaxNode
 	rightNode *abstSyntaxNode
 	value     interface{} // num の値や、local variable の offset を入れる
 }
 
-func makeNewAbstSyntaxNode(nodeKind int, leftNode *abstSyntaxNode, rightNode *abstSyntaxNode, value interface{}) *abstSyntaxNode {
+func makeNewAbstSyntaxNode(nodeKind NodeKind, leftNode *abstSyntaxNode, rightNode *abstSyntaxNode, value interface{}) *abstSyntaxNode {
 	return &abstSyntaxNode{nodeKind: nodeKind, leftNode: leftNode, rightNode: rightNode, value: value}
 }
 
 func makeNewVariableManager() *variableManager {
 	return &variableManager{varList: map[string]variable{}, nextoffset: 8}
+}
+
+// (*n)TypePrimKind 型を作成する。
+func makeTypeKind(tpk TypePrimKind, n int) (typeKind TypeKind) {
+	ty0 := TypeKind{primKind: TypeInt, ptrTo: nil, width: 4}
+	if n == 0 {
+		return ty0
+	}
+	ty := []TypeKind{ty0}
+	for i := 0; i < n; i++ {
+		tyn := TypeKind{primKind: TypePtr, ptrTo: &ty[i], width: 8}
+		ty = append(ty, tyn)
+	}
+	return ty[n]
 }
 
 func (v *variableManager) reset() {
@@ -80,24 +103,63 @@ func (v *variableManager) add(varname string, kind TypeKind) (nvar variable, err
 		return variable{}, fmt.Errorf("%s is already defined", varname)
 	} else {
 		// 変数が未定義 -> 追加
-		switch kind {
-		case TypeInt:
-			nvar = variable{kind: TypeInt, ptrTo: nil, offset: v.nextoffset}
-			v.nextoffset += 8
-		case TypePtr:
-			nvar = variable{kind: TypePtr, ptrTo: nil, offset: v.nextoffset}
-			v.nextoffset += 8
-		}
-
+		nvar = variable{kind: kind, offset: v.nextoffset}
+		v.nextoffset += 8
 	}
 
 	v.varList[varname] = nvar
 	return nvar, nil
 }
 
-func ParserMain(tokens []Token) (nodes []*abstSyntaxNode, err error) {
+// 実装途中 TODO; x + 2, p + 2 などの式
+func getSizeOf(node *abstSyntaxNode) (size int, err error) {
+	pcount := 0 // 何個のポインタの型か * -> +1
+	pc := node
+	if node.nodeKind == ND_DEREF {
+		for {
+			if pc.nodeKind != ND_DEREF {
+				break
+			}
+			pc = pc.leftNode
+			pcount++
+		}
+	}
+
+	if node.nodeKind == ND_ADDR {
+		for {
+			if pc.nodeKind != ND_ADDR {
+				break
+			}
+			pc = pc.leftNode
+			pcount--
+		}
+	}
+
+	if pcount < 0 {
+		return 8, nil
+	}
+
+	switch pc.nodeKind {
+	case ND_NUM:
+		return 4, nil
+	case ND_LVAR:
+		nvarKind := pc.value.(variable).kind
+		pck := &nvarKind
+		// * の数だけ型から*を取る
+		for i := 0; i < pcount; i++ {
+			pck = pck.ptrTo
+		}
+		return pck.width, nil
+	default:
+		return 0, fmt.Errorf("[NOT IMPLEMENTED] getSizeOf: %s is not a valid type", string(node.nodeKind))
+	}
+
+	return 0, nil
+}
+
+func ParserMain(tokens []Token, noMain bool) (nodes []*abstSyntaxNode, err error) {
 	ts = newTokenStream(tokens)
-	if !NoMain {
+	if !noMain {
 		nodes, err = Expr_program(ts)
 	} else {
 		nodes, err = Expr_programNoMain(ts)
