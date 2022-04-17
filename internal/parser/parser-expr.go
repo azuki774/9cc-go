@@ -372,28 +372,25 @@ func Expr_add() (node *abstSyntaxNode, err error) {
 	// + か - があるとき
 	for {
 		nToken := ts.nextPeekToken()
-		switch nToken.kind {
-		case TK_ADD:
-			ts.nextToken()
+		if nToken.kind == TK_ADD || nToken.kind == TK_SUB {
+			// node + e or node - e
+			ts.nextToken() // + or -
 			e, err := Expr_mul()
 			if err != nil {
 				return nil, err
 			}
-			node = makeNewAbstSyntaxNode(ND_ADD, node, e, nil)
-			continue
-		case TK_SUB:
-			ts.nextToken()
-			e, err := Expr_mul()
-			if err != nil {
-				return nil, err
-			}
-			node = makeNewAbstSyntaxNode(ND_SUB, node, e, nil)
-			continue
-		}
 
-		// + Token でも - Token でもないとき
-		break
+			if nToken.kind == TK_ADD {
+				node = makeNewAbstSyntaxNode(ND_ADD, node, e, nil)
+			} else if nToken.kind == TK_SUB {
+				node = makeNewAbstSyntaxNode(ND_SUB, node, e, nil)
+			}
+		} else {
+			// + Token でも - Token でもないとき
+			break
+		}
 	}
+
 	return node, nil
 }
 

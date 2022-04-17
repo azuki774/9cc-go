@@ -42,6 +42,8 @@ type TypeKind string
 const (
 	TypeInt = TypeKind("int")
 	TypePtr = TypeKind("pointer")
+
+	PointerSize = 8
 )
 
 type variableManager struct {

@@ -263,6 +263,8 @@ func genCode(node *abstSyntaxNode) (err error) {
 		return
 	}
 
+	// 二項演算系
+
 	if err := genCode(node.leftNode); err != nil {
 		return err
 	}
@@ -270,20 +272,45 @@ func genCode(node *abstSyntaxNode) (err error) {
 		return err
 	}
 
-	// ADD と SUB はポインタ加減算があるので対応
-	switch node.nodeKind {
-	case ND_ADD:
-		generatingCode = append(generatingCode, "pop rdi\n")
-		generatingCode = append(generatingCode, "pop rax\n")
-		generatingCode = append(generatingCode, "add rax, rdi\n")
+	// 左辺と右辺にポインタがあるか確認
+	existsPointer := 0
+	// 0 なら存在しない、1なら左辺、2なら右辺、3は両辺 (Error)
+	if node.leftNode.nodeKind == ND_LVAR {
+		if node.leftNode.value.(variable).kind == TypePtr {
+			existsPointer += 1
+		}
+	}
+
+	if node.rightNode.nodeKind == ND_LVAR {
+		if node.rightNode.value.(variable).kind == TypePtr {
+			existsPointer += 2
+		}
+	}
+
+	if existsPointer == 3 {
+		return fmt.Errorf("genCode: not permitted of binary pointer operation")
+	}
+
+	// ADD と SUB はポインタ加減算があるので先に処理
+
+	if node.nodeKind == ND_ADD || node.nodeKind == ND_SUB {
+		generatingCode = append(generatingCode, "pop rdi\n") // right node
+		generatingCode = append(generatingCode, "pop rax\n") // left node
+		if existsPointer == 2 {
+			generatingCode = append(generatingCode, "imul rdi, 8\n") // right node
+		}
+		if existsPointer == 1 {
+			generatingCode = append(generatingCode, "imul rax, 8\n") // left node
+		}
+
+		if node.nodeKind == ND_ADD {
+			generatingCode = append(generatingCode, "add rax, rdi\n")
+		} else {
+			// ND_SUB
+			generatingCode = append(generatingCode, "sub rax, rdi\n")
+		}
 		generatingCode = append(generatingCode, "push rax\n")
-		return
-	case ND_SUB:
-		generatingCode = append(generatingCode, "pop rdi\n")
-		generatingCode = append(generatingCode, "pop rax\n")
-		generatingCode = append(generatingCode, "sub rax, rdi\n")
-		generatingCode = append(generatingCode, "push rax\n")
-		return
+		return nil
 	}
 
 	generatingCode = append(generatingCode, "pop rdi\n")
