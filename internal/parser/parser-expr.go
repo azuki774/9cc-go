@@ -475,7 +475,7 @@ func Expr_unary() (node *abstSyntaxNode, err error) {
 		if err != nil {
 			return nil, err
 		}
-		fmt.Println(e)
+
 		// e を見て sizeof e を評価してしまう
 		size, err := getSizeOf(e)
 		node = makeNewAbstSyntaxNode(ND_NUM, nil, nil, size)
@@ -585,7 +585,7 @@ func expr_defVar() (node *abstSyntaxNode, err error) {
 		return nil, err
 	}
 
-	node = makeNewAbstSyntaxNode(ND_LVAR, nil, nil, nvar)
+	node = makeNewAbstSyntaxNode(ND_NIL, nil, nil, nvar)
 	return node, nil
 }
 
